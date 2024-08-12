@@ -10,8 +10,10 @@ AudioCallback::AudioCallback(const std::string audioOutName,
                             const std::string accessKey,
                             const std::string modelPath,
                             const std::string keywordPath,
+                            const std::string faceExpressionOutName,
                             const float sensitivity) {
     m_audioOut.open(audioOutName);
+    m_faceOutput.open(faceExpressionOutName);
     
     const char *keywords = keywordPath.c_str();
     pv_status_t porcupine_status = pv_porcupine_init(accessKey.c_str(), modelPath.c_str(), 1, &keywords, &sensitivity, &m_porcupine);
@@ -52,8 +54,14 @@ void AudioCallback::onRead(yarp::sig::Sound &soundReceived) {
         m_audioOut.write();
     }
     else {
+        if (m_prevStreaming)
+        {
+            colorEars(0, 0, 255);
+        }
+        
         processFrame(soundReceived);
-    }    
+    }
+    m_prevStreaming = m_currentlyStreaming;
 }
 
 void AudioCallback::processFrame(yarp::sig::Sound &soundReceived) {
@@ -93,6 +101,7 @@ bool AudioCallback::processSliceOfFrame(const size_t &numSamplesInFrame, int cur
     bool keyWordDetected = false;
     if (keyword_index != -1) {
         yCDebug(WAKEWORDDETECTOR) <<  "keyword detected!!!!!!!!!!!";
+        colorEars(0, 255, 0);
         keyWordDetected = true;
 
         // resize buffer to contain a few previous slices of audio + have space for all remaining samples in the current audioframe
@@ -123,6 +132,26 @@ void AudioCallback::sendRemainingSamples() {
         soundToSend.set(m_remainingSamplesBuffer.at(i), i);
     }
     m_audioOut.write();
+}
+
+bool AudioCallback::colorEars(int r, int g, int b)
+{
+    yarp::os::Bottle bot;
+    bot.addString("color_ears");
+    bot.addFloat32(r);
+    bot.addFloat32(g);
+    bot.addFloat32(b);
+    bool result = m_faceOutput.write(bot);
+    if (result)
+    {
+        yCDebug(HEAD_SYNCHRONIZER) << "Ears color changed successfully to:" << r << g << b;
+        return true;
+    }
+    else
+    {
+        yCError(HEAD_SYNCHRONIZER) << "Ears color failed to change";
+        return false;
+    }
 }
 
 void AudioCallback::printPorcupineErrorMessage(char **messageStack, int32_t messageStackDepth) {

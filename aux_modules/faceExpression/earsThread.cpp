@@ -76,6 +76,7 @@ bool EarsThread::threadInit()
     m_blackBar.setTo(Scalar(0, 0, 0));
 
     this->resetToDefault();
+    m_earBar.setTo(Scalar(0,0,255));
     return true;
 }
 
@@ -89,33 +90,12 @@ void EarsThread::run()
         return;
     }
 
-    float percentage = 0.5;
-
-    yarp::dev::AudioRecorderStatus *rec_status = m_audioStatusPort.read(false);
-    if (rec_status)
-    {
-        m_micIsEnabled = rec_status->enabled; //&& rec_status->current_buffer_size > 0;
-        //yInfo() << rec_status->current_buffer_size;
-    //    yInfo() << m_micIsEnabled;
-    }
 
     yarp::sig::Sound* data_audio = m_audioRecPort.read(false);
     if(m_doBars)
     {
-        if(data_audio){
-            auto vec= data_audio->getChannel(0);
-      	    short int max_val = *std::max_element(vec.begin(),vec.end());
-//            max_val = 30000;
-            percentage = fabs((float)max_val / 32800);
-            updateBars(percentage);
-            yInfo() << percentage;
-        }
+        updateBars(1);
     }
-    else
-    {
-        updateBars(0.5);
-    }
-
 }
 
 bool EarsThread::updateBars(float percentage)
@@ -124,18 +104,6 @@ bool EarsThread::updateBars(float percentage)
 
     earBar0_len = earBar0_minLen + (earBar0_maxLen - earBar0_minLen) *  percentage;
     earBar1_len = earBar1_minLen + (earBar1_maxLen - earBar1_minLen) *  percentage;
-
-    if(m_micIsEnabled==false){
-        m_earBar.setTo(Scalar(0,0,255));
-        percentage=0.5;
-    }
-    else
-    {
-       m_earBar.setTo(m_earsDefaultColor);
-    }
-    if(percentage>0.85){
-        m_earBar.setTo(Scalar(255,0,0));
-    }
 
 
     // Reset bars to black
@@ -165,7 +133,7 @@ void EarsThread::resetToDefault()
     lock_guard<recursive_mutex> lg(m_methods_mutex);
     m_doBars = true;
     m_earBar.setTo(m_earsDefaultColor);
-    updateBars(0.5);
+    updateBars(1);
 }
 
 void EarsThread::setColor(float vr, float vg, float vb)

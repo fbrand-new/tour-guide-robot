@@ -18,6 +18,10 @@ bool WakeWordModule::configure(yarp::os::ResourceFinder &rf) {
                                                   "Name of the input port to stop streaming")
                                              .asString();
 
+    std::string faceExpressionPort = rf.check("face_server_port_name", yarp::os::Value("/wake/face:o"),
+                                                  "Name of the input port to stop streaming")
+                                             .asString();
+
     std::string accessKey = rf.check("accessKey", yarp::os::Value("E3HSLWAlzc76SFsflAy+9NSJotzp4u1VQIKU63sdiyc9CzqQL8HRDg=="),
                                                   "Porcupine access key")
                                              .asString();
@@ -34,7 +38,7 @@ bool WakeWordModule::configure(yarp::os::ResourceFinder &rf) {
                                                   "Sensivity of wake word detector, higher will mean more false positves less false negatives")
                                              .asFloat32();
 
-    m_callback = std::make_shared<AudioCallback>(audioPortOutName, accessKey, modelPath, keywordPath, detectorSensitivity);
+    m_callback = std::make_shared<AudioCallback>(audioPortOutName, accessKey, modelPath, keywordPath, faceExpressionPort, detectorSensitivity);
 
     if (!m_audioPortIn.open(audioPortInName))
     {

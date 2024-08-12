@@ -21,11 +21,13 @@ public:
                     const std::string accessKey,
                     const std::string modelPath,
                     const std::string keywordPath,
+                    const std::string faceExpressionOutName,
                     const float sensitivity);
 
     using TypedReaderCallback<yarp::sig::Sound>::onRead;
     void onRead(yarp::sig::Sound& soundReceived) override;
     bool m_currentlyStreaming = false; // stream until VAD reports that its done detecting voice
+    bool m_prevStreaming = false;
 
 
 private:    
@@ -41,11 +43,13 @@ private:
     std::vector<int16_t> m_remainingSamplesBuffer; // once wake word is detected gather all the following samples to send
 
     yarp::os::BufferedPort<yarp::sig::Sound> m_audioOut;
+    yarp::os::Port m_faceOutput;
 
     void processFrame(yarp::sig::Sound &soundReceived);
     bool processSliceOfFrame(const size_t &num_samples, int currentSampleIdx, int &m_remainingSamplesBufferIdx);
     void sendRemainingSamples();
     void printPorcupineErrorMessage(char **message_stack, int32_t message_stack_depth);
+    bool colorEars(int r, int g, int b);
 };
 
 #endif
