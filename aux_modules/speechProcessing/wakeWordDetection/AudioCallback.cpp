@@ -144,12 +144,12 @@ bool AudioCallback::colorEars(int r, int g, int b)
     bool result = m_faceOutput.write(bot);
     if (result)
     {
-        yCDebug(HEAD_SYNCHRONIZER) << "Ears color changed successfully to:" << r << g << b;
+        yCDebug(WAKEWORDDETECTOR) << "Ears color changed successfully to:" << r << g << b;
         return true;
     }
     else
     {
-        yCError(HEAD_SYNCHRONIZER) << "Ears color failed to change";
+        yCError(WAKEWORDDETECTOR) << "Ears color failed to change";
         return false;
     }
 }
