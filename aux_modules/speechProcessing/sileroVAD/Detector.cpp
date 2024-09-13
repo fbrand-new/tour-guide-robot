@@ -15,31 +15,30 @@ YARP_LOG_COMPONENT(VADAUDIOPROCESSOR, "behavior_tour_robot.voiceActivationDetect
 
 Detector::Detector(int vadFrequency,
                     int vadSampleLength,
-                    int vadAggressiveness,
                     int gapAllowance,
-                    int minSoundSize,
                     std::string filteredAudioPortOutName,
                     std::string wakeWordClientPort):
                     m_vadFrequency(vadFrequency),
                     m_vadSampleLength(vadSampleLength),
-                    m_vadAggressiveness(vadAggressiveness),
-                    m_gapAllowance(gapAllowance),
-                    m_minSoundSize(minSoundSize) {
+                    m_gapAllowance(gapAllowance) {
     
     init_onnx_model(modelPath);
-    window_size_samples = 512 + 64;
-    m_currentSoundBuffer = std::vector<float>(window_size_samples, 0);
+    m_currentSoundBufferNorm = std::vector<float>(m_vadSampleLength, 0);
+    m_currentSoundBuffer = std::vector<int16_t>(m_vadSampleLength, 0);
+    m_context = std::vector<float>(64, 0);
     m_fillCount = 0;
 
-    input.resize(window_size_samples);
+    input.resize(m_context.size() + m_vadSampleLength);
     input_node_dims[0] = 1;
-    input_node_dims[1] = window_size_samples;
+    input_node_dims[1] = m_context.size() + m_currentSoundBuffer.size();
 
     _state.resize(size_state);
     sr.resize(1);
     sr[0] = 16000;
 
     reset_states();
+
+    m_filteredAudioOutputPort.open(filteredAudioPortOutName);
 }
 
 void Detector::init_engine_threads(int inter_threads, int intra_threads) {
@@ -59,23 +58,13 @@ void Detector::init_onnx_model(const std::string& model_path) {
 void Detector::reset_states() {
     // Call reset before each audio start
     std::memset(_state.data(), 0.0f, _state.size() * sizeof(float));
-    triggered = false;
-    temp_end = 0;
-    current_sample = 0;
-
-    prev_end = next_start = 0;
-
 };
 
 void Detector::predict(const std::vector<float> &data) {
     // Infer
     // Create ort tensors
-    input.assign(data.begin(), data.end());
-    // for (auto &&i : input)
-    // {
-    //     std::cout << i << " ";
-    // }
-    // std::cout << std::endl;
+    std::copy(m_context.begin(), m_context.end(), input.begin());
+    std::copy(m_currentSoundBuffer.begin(), m_currentSoundBuffer.end(), input.begin() + m_context.size()); 
     Ort::Value input_ort = Ort::Value::CreateTensor<float>(
         memory_info, input.data(), input.size(), input_node_dims, 2);
     Ort::Value state_ort = Ort::Value::CreateTensor<float>(
@@ -102,12 +91,34 @@ void Detector::predict(const std::vector<float> &data) {
     std::memcpy(_state.data(), stateN, size_state * sizeof(float));
 
 
-    std::cout << speech_prob << std::endl;
-    if (speech_prob > 0.5)
-    {
-        std::cout << "SPEECH!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << std::endl;
+    // std::cout << speech_prob << std::endl;
+    bool isTalking = speech_prob > 0.5;
+    if (isTalking) { 
+        yCDebug(VADAUDIOPROCESSOR) << "Voice detected adding to send buffer";
+        m_soundDetected = true;
+        m_soundToSend.push_back(m_currentSoundBuffer);
+        m_gapCounter = 0;
+    } else {
+        if (m_soundDetected)
+        {
+            ++m_gapCounter;
+            if (m_gapCounter > m_gapAllowance)
+            {
+                yCDebug(VADAUDIOPROCESSOR) << "End of of speech";
+                sendSound();
+                m_soundToSend.clear();
+                m_soundDetected = false;
+                reset_states();
+            }
+        } 
     }
-    
+
+    // copy last part in to context for next input
+    std::copy(
+        m_currentSoundBuffer.end() - m_context.size(),
+        m_currentSoundBuffer.end(),  
+        m_context.begin()                     
+    );
 };
 
 
@@ -116,10 +127,11 @@ void Detector::onRead(yarp::sig::Sound& soundReceived) {
 
     for (size_t i = 0; i < num_samples; i++)
     {
-        m_currentSoundBuffer.at(m_fillCount) = static_cast<float>(soundReceived.get(i)) / INT16_MAX;
+        m_currentSoundBuffer.at(m_fillCount) = soundReceived.get(i);
+        m_currentSoundBufferNorm.at(m_fillCount) = static_cast<float>(soundReceived.get(i)) / INT16_MAX;
         ++m_fillCount;
-        if (m_fillCount == window_size_samples) {
-            predict(m_currentSoundBuffer);
+        if (m_fillCount == m_currentSoundBuffer.size()) {
+            predict(m_currentSoundBufferNorm);
             m_fillCount = 0;
         }
     } 
@@ -128,7 +140,6 @@ void Detector::onRead(yarp::sig::Sound& soundReceived) {
 
 
 void Detector::sendSound() {
-    int numberOfSamplesPerPacket = m_vadSampleLength * (m_vadFrequency / 1000);
     int packetsWithSound = m_soundToSend.size();
 
     yarp::sig::Sound& soundToSend = m_filteredAudioOutputPort.prepare();

@@ -14,16 +14,12 @@ class VoiceActivationDetectionModule : public yarp::os::RFModule
 {
 private:
     static constexpr int VAD_FREQUENCY_DEFAULT = 16000;
-    static constexpr int VAD_SAMPLE_LENGTH_DEFAULT = 20; // millisecond
-    static constexpr int VAD_AGGRESSIVENESS_DEFAULT = 0;
-    static constexpr int VAD_GAP_ALLOWANCE_DEFAULT = 29; // In packets of the chosen sample length
-    static constexpr int VAD_MIN_SOUND_OUT_SIZE_DEFAULT = 60; // In packets of the chosen sample length
+    static constexpr int VAD_SAMPLE_LENGTH_DEFAULT = 512;
+    static constexpr int VAD_GAP_ALLOWANCE_DEFAULT = 5; // In packets of the chosen sample length
 
     int m_vadFrequency{VAD_FREQUENCY_DEFAULT};
     int m_vadSampleLength{VAD_SAMPLE_LENGTH_DEFAULT};
-    int m_vadAggressiveness{VAD_AGGRESSIVENESS_DEFAULT};
     int m_vadGapAllowance{VAD_GAP_ALLOWANCE_DEFAULT};
-    int m_minSoundOutSize{VAD_MIN_SOUND_OUT_SIZE_DEFAULT};
     yarp::os::BufferedPort<yarp::sig::Sound> m_audioPort;            /** The input port for receiving the microphone input. **/
     std::unique_ptr<Detector> m_audioProcessor;
 

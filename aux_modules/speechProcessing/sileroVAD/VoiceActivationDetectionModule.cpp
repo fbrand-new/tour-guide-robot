@@ -36,15 +36,6 @@ bool VoiceActivationDetectionModule::configure(yarp::os::ResourceFinder &rf)
         m_vadFrequency = rf.find("vad_frequency").asInt32();
     }
 
-    if (!rf.check("vad_aggressiveness", "vad_aggressiveness"))
-    {
-        yCDebug(VADAUDIOPROCESSORCREATOR) << "Using default 'vad_aggressiveness' parameter of " << VAD_AGGRESSIVENESS_DEFAULT;
-    }
-    else
-    {
-        m_vadAggressiveness = rf.find("vad_aggressiveness").asInt32();
-    }
-
     if (!rf.check("vad_sample_length", "vad_sample_length"))
     {
         yCDebug(VADAUDIOPROCESSORCREATOR) << "Using default 'vad_sample_length' parameter of " << VAD_SAMPLE_LENGTH_DEFAULT;
@@ -63,15 +54,6 @@ bool VoiceActivationDetectionModule::configure(yarp::os::ResourceFinder &rf)
         m_vadGapAllowance = rf.find("vad_gap_allowance").asInt32();
     }
 
-    if (!rf.check("vad_min_sound_out_size", "vad_min_sound_out_size"))
-    {
-        yCDebug(VADAUDIOPROCESSORCREATOR) << "Using default 'vad_min_sound_out_size' parameter of " << VAD_MIN_SOUND_OUT_SIZE_DEFAULT;
-    }
-    else
-    {
-        m_minSoundOutSize = rf.find("vad_min_sound_out_size").asInt32();
-    }
-
     if (!m_audioPort.open(audioPortIn))
     {
         yCError(VADAUDIOPROCESSORCREATOR) << "cannot open port " << audioPortIn;
@@ -81,9 +63,7 @@ bool VoiceActivationDetectionModule::configure(yarp::os::ResourceFinder &rf)
     
     m_audioProcessor = std::make_unique<Detector>(m_vadFrequency,
                                                     m_vadSampleLength,
-                                                    m_vadAggressiveness,
                                                     m_vadGapAllowance,
-                                                    m_minSoundOutSize,
                                                     filteredAudioPortOutName,
                                                     wakeWordClientPort);
 
