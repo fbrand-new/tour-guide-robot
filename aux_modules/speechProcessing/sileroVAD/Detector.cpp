@@ -38,7 +38,14 @@ Detector::Detector(int vadFrequency,
 
     reset_states();
 
-    m_filteredAudioOutputPort.open(filteredAudioPortOutName);
+    if (!m_rpcClientPort.open(wakeWordClientPort)){
+        yCError(VADAUDIOPROCESSOR) << "cannot open port" << wakeWordClientPort;
+    }
+    m_rpcClient.yarp().attachAsClient(m_rpcClientPort);
+
+    if (!m_filteredAudioOutputPort.open(filteredAudioPortOutName)){
+        yCError(VADAUDIOPROCESSOR) << "cannot open port" << wakeWordClientPort;
+    }
 }
 
 void Detector::init_engine_threads(int inter_threads, int intra_threads) {
@@ -108,6 +115,7 @@ void Detector::predict(const std::vector<float> &data) {
                 sendSound();
                 m_soundToSend.clear();
                 m_soundDetected = false;
+                m_rpcClient.stop();
                 reset_states();
             }
         } 

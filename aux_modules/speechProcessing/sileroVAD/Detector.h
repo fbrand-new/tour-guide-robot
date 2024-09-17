@@ -18,6 +18,7 @@
 #include <mutex>
 #include "onnxruntime_cxx_api.h"
 #include <yarp/os/BufferedPort.h>
+#include "WakeMsgs.h"
 
 class Detector: public yarp::os::TypedReaderCallback<yarp::sig::Sound> {
 public:
@@ -33,13 +34,6 @@ private:
     int m_vadFrequency;
     int m_vadSampleLength;
 
-    std::string modelPath = "/home/mgonzalez/silero-vad/src/silero_vad/data/silero_vad.onnx";
-    Ort::Env env;
-    Ort::SessionOptions session_options;
-    std::shared_ptr<Ort::Session> session = nullptr;
-    Ort::AllocatorWithDefaultOptions allocator;
-    Ort::MemoryInfo memory_info = Ort::MemoryInfo::CreateCpu(OrtArenaAllocator, OrtMemTypeCPU);
-
     std::deque<std::vector<int16_t>> m_soundToSend; /** Internal sound buffer. **/
     std::vector<float> m_currentSoundBufferNorm;
     std::vector<int16_t> m_currentSoundBuffer;
@@ -54,8 +48,16 @@ private:
     int m_minSoundSize = 0; // how many extra packets to pad, can help with transcription
 
     yarp::os::RpcClient m_rpcClientPort;
+    WakeMsgs m_rpcClient;
 
     // Onnx model
+    std::string modelPath = "/home/mgonzalez/silero-vad/src/silero_vad/data/silero_vad.onnx";
+    Ort::Env env;
+    Ort::SessionOptions session_options;
+    std::shared_ptr<Ort::Session> session = nullptr;
+    Ort::AllocatorWithDefaultOptions allocator;
+    Ort::MemoryInfo memory_info = Ort::MemoryInfo::CreateCpu(OrtArenaAllocator, OrtMemTypeCPU);
+
     // Inputs
     std::vector<Ort::Value> ort_inputs;
     
