@@ -17,41 +17,29 @@ YARP_LOG_COMPONENT(VADAUDIOPROCESSOR, "behavior_tour_robot.voiceActivationDetect
 Detector::Detector(int vadFrequency,
                     int gapAllowance,
                     float threshold,
+                    const std::string modelPath,
                     std::string filteredAudioPortOutName,
                     std::string wakeWordClientPort):
                     m_vadFrequency(vadFrequency),
                     m_gapAllowance(gapAllowance),
-                    m_vadThreshold(threshold) {
+                    m_vadThreshold(threshold),
+                    m_vadNumSamples((vadFrequency == 16000) ? 512 :
+                                    (vadFrequency == 8000) ? 256 :
+                                    throw std::runtime_error("Unsupported sample rate")),
+                    m_context((vadFrequency == 16000) ? 64 : 32, 0),
+                    m_currentSoundBufferNorm(m_vadNumSamples, 0),
+                    m_currentSoundBuffer(m_vadNumSamples, 0),
+                    m_fillCount(0) {
     
     init_onnx_model(modelPath);
 
-    if (m_vadFrequency == 16000)
-    {
-        m_vadNumSamples = 512;
-        m_context = std::vector<float>(64, 0);
-    }
-    else if (m_vadFrequency == 8000)
-    {
-        m_vadNumSamples = 256;
-        m_context = std::vector<float>(32, 0);
-    }
-    else
-    {
-        throw std::runtime_error("Unsupported sample rate");
-    }
+    m_input.resize(m_context.size() + m_vadNumSamples);
+    m_input_node_dims[0] = 1;
+    m_input_node_dims[1] = m_context.size() + m_currentSoundBuffer.size();
 
-    m_currentSoundBufferNorm = std::vector<float>(m_vadNumSamples, 0);
-    m_currentSoundBuffer = std::vector<int16_t>(m_vadNumSamples, 0);
-    
-    m_fillCount = 0;
-
-    input.resize(m_context.size() + m_vadNumSamples);
-    input_node_dims[0] = 1;
-    input_node_dims[1] = m_context.size() + m_currentSoundBuffer.size();
-
-    _state.resize(size_state);
-    sr.resize(1);
-    sr[0] = m_vadFrequency;
+    m_state.resize(m_size_state);
+    m_sr.resize(1);
+    m_sr[0] = m_vadFrequency;
 
     reset_states();
 
@@ -66,48 +54,47 @@ Detector::Detector(int vadFrequency,
 }
 
 void Detector::init_engine_threads(int inter_threads, int intra_threads) {
-    session_options.SetIntraOpNumThreads(intra_threads);
-    session_options.SetInterOpNumThreads(inter_threads);
-    session_options.SetGraphOptimizationLevel(GraphOptimizationLevel::ORT_DISABLE_ALL);
+    m_session_options.SetIntraOpNumThreads(intra_threads);
+    m_session_options.SetInterOpNumThreads(inter_threads);
+    m_session_options.SetGraphOptimizationLevel(GraphOptimizationLevel::ORT_DISABLE_ALL);
 };
 
 void Detector::init_onnx_model(const std::string& model_path) {
     init_engine_threads(1, 1);
-    session = std::make_shared<Ort::Session>(env, model_path.c_str(), session_options);
+    m_session = std::make_shared<Ort::Session>(m_env, model_path.c_str(), m_session_options);
 };
 
 void Detector::reset_states() {
-    std::memset(_state.data(), 0.0f, _state.size() * sizeof(float));
+    std::memset(m_state.data(), 0.0f, m_state.size() * sizeof(float));
 };
 
 void Detector::predict(const std::vector<float> &data) {
     // Create ort tensors
-    std::copy(m_context.begin(), m_context.end(), input.begin());
-    std::copy(m_currentSoundBuffer.begin(), m_currentSoundBuffer.end(), input.begin() + m_context.size()); 
+    std::copy(m_context.begin(), m_context.end(), m_input.begin());
+    std::copy(m_currentSoundBuffer.begin(), m_currentSoundBuffer.end(), m_input.begin() + m_context.size()); 
     Ort::Value input_ort = Ort::Value::CreateTensor<float>(
-        memory_info, input.data(), input.size(), input_node_dims, 2);
+        m_memory_info, m_input.data(), m_input.size(), m_input_node_dims, 2);
     Ort::Value state_ort = Ort::Value::CreateTensor<float>(
-        memory_info, _state.data(), _state.size(), state_node_dims, 3);
+        m_memory_info, m_state.data(), m_state.size(), m_state_node_dims, 3);
     Ort::Value sr_ort = Ort::Value::CreateTensor<int64_t>(
-        memory_info, sr.data(), sr.size(), sr_node_dims, 1);
+        m_memory_info, m_sr.data(), m_sr.size(), m_sr_node_dims, 1);
 
     // Clear and add inputs
-    ort_inputs.clear();
-    ort_inputs.emplace_back(std::move(input_ort));
-    ort_inputs.emplace_back(std::move(state_ort));
-    ort_inputs.emplace_back(std::move(sr_ort));
+    m_ort_inputs.clear();
+    m_ort_inputs.emplace_back(std::move(input_ort));
+    m_ort_inputs.emplace_back(std::move(state_ort));
+    m_ort_inputs.emplace_back(std::move(sr_ort));
 
     // Infer
-    ort_outputs = session->Run(
+    m_ort_outputs = m_session->Run(
         Ort::RunOptions{nullptr},
-        input_node_names.data(), ort_inputs.data(), ort_inputs.size(),
-        output_node_names.data(), output_node_names.size());
+        m_input_node_names.data(), m_ort_inputs.data(), m_ort_inputs.size(),
+        m_output_node_names.data(), m_output_node_names.size());
 
     // Output probability & update h,c recursively
-    float speech_prob = ort_outputs[0].GetTensorMutableData<float>()[0];
-    float *stateN = ort_outputs[1].GetTensorMutableData<float>();
-    std::memcpy(_state.data(), stateN, size_state * sizeof(float));
-
+    float speech_prob = m_ort_outputs[0].GetTensorMutableData<float>()[0];
+    float *stateN = m_ort_outputs[1].GetTensorMutableData<float>();
+    std::memcpy(m_state.data(), stateN, m_size_state * sizeof(float));
 
     bool isTalking = speech_prob > m_vadThreshold;
     if (isTalking) { 

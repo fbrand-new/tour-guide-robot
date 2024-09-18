@@ -25,15 +25,16 @@ public:
     Detector(int vadFrequency,
             int gapAllowance,
             float threshold,
+            const std::string modelPath,
             std::string filteredAudioPortOutName,
             std::string wakeWordClientPort);
     using TypedReaderCallback<yarp::sig::Sound>::onRead;
     void onRead(yarp::sig::Sound& soundReceived) override;
 
 private:
-    int m_vadFrequency;
+    const int m_vadFrequency;
     int m_vadNumSamples;
-    float m_vadThreshold;
+    const float m_vadThreshold;
 
     std::deque<std::vector<int16_t>> m_soundToSend; /** Internal sound buffer. **/
     std::vector<float> m_currentSoundBufferNorm;
@@ -52,29 +53,28 @@ private:
     WakeMsgs m_rpcClient;
 
     // Onnx model
-    std::string modelPath = "/home/mgonzalez/silero-vad/src/silero_vad/data/silero_vad.onnx";
-    Ort::Env env;
-    Ort::SessionOptions session_options;
-    std::shared_ptr<Ort::Session> session = nullptr;
-    Ort::AllocatorWithDefaultOptions allocator;
-    Ort::MemoryInfo memory_info = Ort::MemoryInfo::CreateCpu(OrtArenaAllocator, OrtMemTypeCPU);
+    Ort::Env m_env;
+    Ort::SessionOptions m_session_options;
+    std::shared_ptr<Ort::Session> m_session = nullptr;
+    Ort::AllocatorWithDefaultOptions m_allocator;
+    Ort::MemoryInfo m_memory_info = Ort::MemoryInfo::CreateCpu(OrtArenaAllocator, OrtMemTypeCPU);
 
     // Inputs
-    std::vector<Ort::Value> ort_inputs;
+    std::vector<Ort::Value> m_ort_inputs;
     
-    std::vector<const char *> input_node_names = {"input", "state", "sr"};
-    std::vector<float> input;
-    unsigned int size_state = 2 * 1 * 128; // It's FIXED.
-    std::vector<float> _state;
-    std::vector<int64_t> sr;
+    std::vector<const char *> m_input_node_names = {"input", "state", "sr"};
+    std::vector<float> m_input;
+    unsigned int m_size_state = 2 * 1 * 128; // It's FIXED.
+    std::vector<float> m_state;
+    std::vector<int64_t> m_sr;
 
-    int64_t input_node_dims[2] = {};
-    const int64_t state_node_dims[3] = {2, 1, 128}; 
-    const int64_t sr_node_dims[1] = {1};
+    int64_t m_input_node_dims[2] = {};
+    const int64_t m_state_node_dims[3] = {2, 1, 128}; 
+    const int64_t m_sr_node_dims[1] = {1};
 
     // Outputs
-    std::vector<Ort::Value> ort_outputs;
-    std::vector<const char *> output_node_names = {"output", "stateN"};
+    std::vector<Ort::Value> m_ort_outputs;
+    std::vector<const char *> m_output_node_names = {"output", "stateN"};
 
 
 
