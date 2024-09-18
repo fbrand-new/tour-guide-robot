@@ -9,32 +9,49 @@
 
 #include <iostream>
 #include <cstdint>
+#include <stdexcept>
 #include "Detector.h"
 
 YARP_LOG_COMPONENT(VADAUDIOPROCESSOR, "behavior_tour_robot.voiceActivationDetection.AudioProcessor", yarp::os::Log::TraceType)
 
 Detector::Detector(int vadFrequency,
-                    int vadSampleLength,
                     int gapAllowance,
+                    float threshold,
                     std::string filteredAudioPortOutName,
                     std::string wakeWordClientPort):
                     m_vadFrequency(vadFrequency),
-                    m_vadSampleLength(vadSampleLength),
-                    m_gapAllowance(gapAllowance) {
+                    m_gapAllowance(gapAllowance),
+                    m_vadThreshold(threshold) {
     
     init_onnx_model(modelPath);
-    m_currentSoundBufferNorm = std::vector<float>(m_vadSampleLength, 0);
-    m_currentSoundBuffer = std::vector<int16_t>(m_vadSampleLength, 0);
-    m_context = std::vector<float>(64, 0);
+
+    if (m_vadFrequency == 16000)
+    {
+        m_vadNumSamples = 512;
+        m_context = std::vector<float>(64, 0);
+    }
+    else if (m_vadFrequency == 8000)
+    {
+        m_vadNumSamples = 256;
+        m_context = std::vector<float>(32, 0);
+    }
+    else
+    {
+        throw std::runtime_error("Unsupported sample rate");
+    }
+
+    m_currentSoundBufferNorm = std::vector<float>(m_vadNumSamples, 0);
+    m_currentSoundBuffer = std::vector<int16_t>(m_vadNumSamples, 0);
+    
     m_fillCount = 0;
 
-    input.resize(m_context.size() + m_vadSampleLength);
+    input.resize(m_context.size() + m_vadNumSamples);
     input_node_dims[0] = 1;
     input_node_dims[1] = m_context.size() + m_currentSoundBuffer.size();
 
     _state.resize(size_state);
     sr.resize(1);
-    sr[0] = 16000;
+    sr[0] = m_vadFrequency;
 
     reset_states();
 
@@ -49,26 +66,21 @@ Detector::Detector(int vadFrequency,
 }
 
 void Detector::init_engine_threads(int inter_threads, int intra_threads) {
-    // The method should be called in each thread/proc in multi-thread/proc work
     session_options.SetIntraOpNumThreads(intra_threads);
     session_options.SetInterOpNumThreads(inter_threads);
     session_options.SetGraphOptimizationLevel(GraphOptimizationLevel::ORT_DISABLE_ALL);
 };
 
 void Detector::init_onnx_model(const std::string& model_path) {
-    // Init threads = 1 for 
     init_engine_threads(1, 1);
-    // Load model
     session = std::make_shared<Ort::Session>(env, model_path.c_str(), session_options);
 };
 
 void Detector::reset_states() {
-    // Call reset before each audio start
     std::memset(_state.data(), 0.0f, _state.size() * sizeof(float));
 };
 
 void Detector::predict(const std::vector<float> &data) {
-    // Infer
     // Create ort tensors
     std::copy(m_context.begin(), m_context.end(), input.begin());
     std::copy(m_currentSoundBuffer.begin(), m_currentSoundBuffer.end(), input.begin() + m_context.size()); 
@@ -93,13 +105,11 @@ void Detector::predict(const std::vector<float> &data) {
 
     // Output probability & update h,c recursively
     float speech_prob = ort_outputs[0].GetTensorMutableData<float>()[0];
-    std::cout << speech_prob << std::endl;
     float *stateN = ort_outputs[1].GetTensorMutableData<float>();
     std::memcpy(_state.data(), stateN, size_state * sizeof(float));
 
 
-    // std::cout << speech_prob << std::endl;
-    bool isTalking = speech_prob > 0.5;
+    bool isTalking = speech_prob > m_vadThreshold;
     if (isTalking) { 
         yCDebug(VADAUDIOPROCESSOR) << "Voice detected adding to send buffer";
         m_soundDetected = true;
@@ -118,10 +128,15 @@ void Detector::predict(const std::vector<float> &data) {
                 m_rpcClient.stop();
                 reset_states();
             }
+            else
+            {
+                m_soundToSend.push_back(m_currentSoundBuffer);
+            }
+            
         } 
     }
 
-    // copy last part in to context for next input
+    // copy last part into context for next input
     std::copy(
         m_currentSoundBuffer.end() - m_context.size(),
         m_currentSoundBuffer.end(),  

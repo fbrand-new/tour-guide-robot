@@ -36,13 +36,13 @@ bool VoiceActivationDetectionModule::configure(yarp::os::ResourceFinder &rf)
         m_vadFrequency = rf.find("vad_frequency").asInt32();
     }
 
-    if (!rf.check("vad_sample_length", "vad_sample_length"))
+    if (!rf.check("vad_threshold", "vad_threshold"))
     {
-        yCDebug(VADAUDIOPROCESSORCREATOR) << "Using default 'vad_sample_length' parameter of " << VAD_SAMPLE_LENGTH_DEFAULT;
+        yCDebug(VADAUDIOPROCESSORCREATOR) << "Using default 'vad_threshold' parameter of " << VAD_THRESHOLD;
     }
     else
     {
-        m_vadSampleLength = rf.find("vad_sample_length").asInt32();
+        m_vadThreshold = rf.find("vad_threshold").asInt32();
     }
 
     if (!rf.check("vad_gap_allowance", "vad_gap_allowance"))
@@ -62,8 +62,8 @@ bool VoiceActivationDetectionModule::configure(yarp::os::ResourceFinder &rf)
 
     
     m_audioProcessor = std::make_unique<Detector>(m_vadFrequency,
-                                                    m_vadSampleLength,
                                                     m_vadGapAllowance,
+                                                    m_vadThreshold,
                                                     filteredAudioPortOutName,
                                                     wakeWordClientPort);
 

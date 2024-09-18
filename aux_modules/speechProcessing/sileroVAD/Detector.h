@@ -23,16 +23,17 @@
 class Detector: public yarp::os::TypedReaderCallback<yarp::sig::Sound> {
 public:
     Detector(int vadFrequency,
-                   int vadSampleLength,
-                   int gapAllowance,
-                   std::string filteredAudioPortOutName,
-                   std::string wakeWordClientPort);
+            int gapAllowance,
+            float threshold,
+            std::string filteredAudioPortOutName,
+            std::string wakeWordClientPort);
     using TypedReaderCallback<yarp::sig::Sound>::onRead;
     void onRead(yarp::sig::Sound& soundReceived) override;
 
 private:
     int m_vadFrequency;
-    int m_vadSampleLength;
+    int m_vadNumSamples;
+    float m_vadThreshold;
 
     std::deque<std::vector<int16_t>> m_soundToSend; /** Internal sound buffer. **/
     std::vector<float> m_currentSoundBufferNorm;
