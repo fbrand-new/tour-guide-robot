@@ -56,7 +56,7 @@ bool VoiceActivationDetectionModule::configure(yarp::os::ResourceFinder &rf)
 
     if (!rf.check("model_path", "model_path"))
     {
-        yCDebug(VADAUDIOPROCESSORCREATOR) << "Using default 'model_path' parameter of " << VAD_FREQUENCY_DEFAULT;
+        yCDebug(VADAUDIOPROCESSORCREATOR) << "Using default 'model_path' parameter of " << MODEL_PATH;
     }
     else
     {

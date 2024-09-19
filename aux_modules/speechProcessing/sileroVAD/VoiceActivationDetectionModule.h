@@ -20,7 +20,7 @@ private:
     int m_vadFrequency{VAD_FREQUENCY_DEFAULT};
     float m_vadThreshold{VAD_THRESHOLD};
     int m_vadGapAllowance{VAD_GAP_ALLOWANCE_DEFAULT};
-    std::string m_modelPath;
+    std::string m_modelPath = MODEL_PATH;
     yarp::os::BufferedPort<yarp::sig::Sound> m_audioPort;            /** The input port for receiving the microphone input. **/
     std::unique_ptr<Detector> m_audioProcessor;
 
