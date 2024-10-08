@@ -5,6 +5,7 @@
 #include <yarp/sig/Sound.h>
 #include <yarp/os/RpcClient.h>
 #include <yarp/os/BufferedPort.h>
+#include <yarp/os/Port.h>
 #include <yarp/os/LogStream.h>
 
 #include <memory>
@@ -22,7 +23,9 @@ public:
                     const std::string modelPath,
                     const std::string keywordPath,
                     const std::string faceExpressionOutName,
-                    const float sensitivity);
+                    const float sensitivity,
+                    const std::string notification_audio_file,
+                    const std::string notification_port_name);
 
     using TypedReaderCallback<yarp::sig::Sound>::onRead;
     void onRead(yarp::sig::Sound& soundReceived) override;
@@ -50,6 +53,11 @@ private:
     void sendRemainingSamples();
     void printPorcupineErrorMessage(char **message_stack, int32_t message_stack_depth);
     bool colorEars(int r, int g, int b);
+
+    // Audio notification when we are ready to listen
+    yarp::sig::Sound m_audio_notification;
+    yarp::os::Port m_notification_out;
+    void play();
 };
 
 #endif

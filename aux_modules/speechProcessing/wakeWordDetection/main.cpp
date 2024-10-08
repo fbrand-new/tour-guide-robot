@@ -16,7 +16,7 @@ int main(int argc, char *argv[])
     // TODO need to be checked
     yarp::os::ResourceFinder rf;
     rf.setVerbose(true);
-    // rf.configure(argc, argv);
+    rf.configure(argc, argv);
 
     WakeWordModule speechModule;
 

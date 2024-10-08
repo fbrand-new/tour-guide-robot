@@ -1,5 +1,6 @@
 #include "AudioCallback.h"
 
+#include <yarp/sig/all.h>
 #include <iostream>
 #include <vector>
 
@@ -11,7 +12,9 @@ AudioCallback::AudioCallback(const std::string audioOutName,
                             const std::string modelPath,
                             const std::string keywordPath,
                             const std::string faceExpressionOutName,
-                            const float sensitivity) {
+                            const float sensitivity,
+                            const std::string notification_audio_file,
+                            const std::string notification_port_name) {
     m_audioOut.open(audioOutName);
     m_faceOutput.open(faceExpressionOutName);
     
@@ -42,6 +45,9 @@ AudioCallback::AudioCallback(const std::string audioOutName,
         pv_free_error_stack(message_stack);
         exit(1);
     }
+
+    yarp::sig::file::read(m_audio_notification,notification_audio_file.c_str()); //Reads the file into a yarp sound
+    m_notification_out.open(notification_port_name);
 
     yCDebug(WAKEWORDDETECTOR) << "Model Loaded successfully";
 }
@@ -102,6 +108,10 @@ bool AudioCallback::processSliceOfFrame(const size_t &numSamplesInFrame, int cur
     if (keyword_index != -1) {
         yCDebug(WAKEWORDDETECTOR) <<  "keyword detected!!!!!!!!!!!";
         colorEars(0, 255, 0);
+
+        // Send notification sound to port
+        this->play();
+        
         keyWordDetected = true;
 
         // resize buffer to contain a few previous slices of audio + have space for all remaining samples in the current audioframe
@@ -158,4 +168,9 @@ void AudioCallback::printPorcupineErrorMessage(char **messageStack, int32_t mess
     for (int32_t i = 0; i < messageStackDepth; i++) {
         yCError(WAKEWORDDETECTOR) << messageStack[i];
     }
+}
+
+void AudioCallback::play()
+{
+    m_notification_out.write(m_audio_notification);
 }

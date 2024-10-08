@@ -35,10 +35,14 @@ bool WakeWordModule::configure(yarp::os::ResourceFinder &rf) {
                                              .asString();
 
     float detectorSensitivity = rf.check("detector_sensitivity", yarp::os::Value(0.6),
-                                                  "Sensivity of wake word detector, higher will mean more false positves less false negatives")
+                                                  "Sensivity of wake word detector, higher will mean more false positives less false negatives")
                                              .asFloat32();
 
-    m_callback = std::make_shared<AudioCallback>(audioPortOutName, accessKey, modelPath, keywordPath, faceExpressionPort, detectorSensitivity);
+    std::string notification_audio_file = rf.check("notification_audio_file",yarp::os::Value("sound.wav")).asString();
+
+    std::string notification_port_name = rf.check("notification_port_name", yarp::os::Value("/notification:o")).asString();
+
+    m_callback = std::make_shared<AudioCallback>(audioPortOutName, accessKey, modelPath, keywordPath, faceExpressionPort, detectorSensitivity,notification_audio_file,notification_port_name);
 
     if (!m_audioPortIn.open(audioPortInName))
     {
