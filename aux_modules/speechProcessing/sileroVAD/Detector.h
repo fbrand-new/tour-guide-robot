@@ -24,7 +24,9 @@ class Detector: public yarp::os::TypedReaderCallback<yarp::sig::Sound> {
 public:
     Detector(int vadFrequency,
             int gapAllowance,
+            bool saveGap,
             float threshold,
+            int vadSavePriorToDetection,
             const std::string modelPath,
             std::string filteredAudioPortOutName,
             std::string wakeWordClientPort);
@@ -33,8 +35,11 @@ public:
 
 private:
     const int m_vadFrequency;
-    int m_vadNumSamples;
+    const int m_vadGapAllowance;
+    const bool m_vadSaveGap;
+    const int m_vadNumSamples;
     const float m_vadThreshold;
+    const int m_vadSavePriorToDetection;
 
     std::deque<std::vector<int16_t>> m_soundToSend; /** Internal sound buffer. **/
     std::vector<float> m_currentSoundBufferNorm;
@@ -45,7 +50,7 @@ private:
     std::string m_filteredAudioPortOutName;
     yarp::os::BufferedPort<yarp::sig::Sound> m_filteredAudioOutputPort; /** The output port for sending the filtered audio. **/
     std::deque<yarp::sig::Sound> m_soundToProcess;
-    int m_gapAllowance = 34;
+
     int m_gapCounter = 0;
     int m_minSoundSize = 0; // how many extra packets to pad, can help with transcription
 

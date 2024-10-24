@@ -13,13 +13,17 @@ class VoiceActivationDetectionModule : public yarp::os::RFModule
 {
 private:
     static constexpr int VAD_FREQUENCY_DEFAULT = 16000;
-    static constexpr float VAD_THRESHOLD = 0.5;
-    static constexpr int VAD_GAP_ALLOWANCE_DEFAULT = 5; // In packets of 32 ms
+    static constexpr float VAD_THRESHOLD = 0.8;
+    static constexpr bool VAD_SAVE_GAP = true;
+    static constexpr int VAD_GAP_ALLOWANCE_DEFAULT = 12; // In packets of 32 ms
+    static constexpr int VAD_SAVE_PRIOR_TO_DETECTION = 15; // In packets of 32 ms
     const std::string MODEL_PATH = "/home/mgonzalez/silero-vad/src/silero_vad/data/silero_vad.onnx";
 
     int m_vadFrequency{VAD_FREQUENCY_DEFAULT};
     float m_vadThreshold{VAD_THRESHOLD};
     int m_vadGapAllowance{VAD_GAP_ALLOWANCE_DEFAULT};
+    bool m_vadSaveGap{VAD_SAVE_GAP};
+    int m_vadSavePriorToDetection{VAD_SAVE_PRIOR_TO_DETECTION};
     std::string m_modelPath = MODEL_PATH;
     yarp::os::BufferedPort<yarp::sig::Sound> m_audioPort;            /** The input port for receiving the microphone input. **/
     std::unique_ptr<Detector> m_audioProcessor;

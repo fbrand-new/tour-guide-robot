@@ -54,6 +54,24 @@ bool VoiceActivationDetectionModule::configure(yarp::os::ResourceFinder &rf)
         m_vadGapAllowance = rf.find("vad_gap_allowance").asInt32();
     }
 
+    if (!rf.check("vad_gap_allowance", "vad_gap_allowance"))
+    {
+        yCDebug(VADAUDIOPROCESSORCREATOR) << "Using default 'vad_save_gap' parameter of " << VAD_SAVE_GAP;
+    }
+    else
+    {
+        m_vadSaveGap = rf.find("vad_gap_allowance").asInt32();
+    }
+
+    if (!rf.check("vad_gap_allowance", "vad_gap_allowance"))
+    {
+        yCDebug(VADAUDIOPROCESSORCREATOR) << "Using default 'vad_save_prior_to_detection' parameter of " << VAD_SAVE_PRIOR_TO_DETECTION;
+    }
+    else
+    {
+        m_vadSavePriorToDetection = rf.find("vad_gap_allowance").asInt32();
+    }
+
     if (!rf.check("model_path", "model_path"))
     {
         yCDebug(VADAUDIOPROCESSORCREATOR) << "Using default 'model_path' parameter of " << MODEL_PATH;
@@ -72,7 +90,9 @@ bool VoiceActivationDetectionModule::configure(yarp::os::ResourceFinder &rf)
     
     m_audioProcessor = std::make_unique<Detector>(m_vadFrequency,
                                                     m_vadGapAllowance,
+                                                    m_vadSaveGap,
                                                     m_vadThreshold,
+                                                    m_vadSavePriorToDetection,
                                                     m_modelPath,
                                                     filteredAudioPortOutName,
                                                     wakeWordClientPort);

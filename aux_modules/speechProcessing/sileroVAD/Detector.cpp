@@ -16,13 +16,17 @@ YARP_LOG_COMPONENT(VADAUDIOPROCESSOR, "behavior_tour_robot.voiceActivationDetect
 
 Detector::Detector(int vadFrequency,
                     int gapAllowance,
+                    bool saveGap,
                     float threshold,
+                    int vadSavePriorToDetection,
                     const std::string modelPath,
                     std::string filteredAudioPortOutName,
                     std::string wakeWordClientPort):
                     m_vadFrequency(vadFrequency),
-                    m_gapAllowance(gapAllowance),
+                    m_vadGapAllowance(gapAllowance),
+                    m_vadSaveGap(saveGap),
                     m_vadThreshold(threshold),
+                    m_vadSavePriorToDetection(vadSavePriorToDetection),
                     m_vadNumSamples((vadFrequency == 16000) ? 512 :
                                     (vadFrequency == 8000) ? 256 :
                                     throw std::runtime_error("Unsupported sample rate")),
@@ -106,7 +110,7 @@ void Detector::predict(const std::vector<float> &data) {
         if (m_soundDetected)
         {
             ++m_gapCounter;
-            if (m_gapCounter > m_gapAllowance)
+            if (m_gapCounter > m_vadGapAllowance)
             {
                 yCDebug(VADAUDIOPROCESSOR) << "End of of speech";
                 sendSound();
@@ -115,12 +119,20 @@ void Detector::predict(const std::vector<float> &data) {
                 m_rpcClient.stop();
                 reset_states();
             }
-            else
+            else if (m_vadSaveGap)
             {
                 m_soundToSend.push_back(m_currentSoundBuffer);
             }
-            
-        } 
+        }
+        else if (m_vadSavePriorToDetection > 0)
+        {
+            m_soundToSend.push_back(m_currentSoundBuffer);
+            if (m_soundToSend.size() > m_vadSavePriorToDetection)
+            {
+                m_soundToSend.pop_front();
+            }
+        }
+        
     }
 
     // copy last part into context for next input
