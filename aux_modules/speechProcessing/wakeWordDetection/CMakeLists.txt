@@ -1,6 +1,8 @@
 set(MODULE_NAME wakeWordDetection)
 add_executable(${MODULE_NAME})
 
+
+set(FETCHCONTENT_QUIET FALSE)
 FetchContent_Declare(
     porcupine
     GIT_REPOSITORY https://github.com/Picovoice/porcupine.git

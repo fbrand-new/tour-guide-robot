@@ -32,13 +32,19 @@
   </module>
 
   <module>
+    <name>yarprobotinterface </name>
+    <parameters>--context vadModule --from audioPlayer.ini</parameters>
+    <node>r1-face</node>
+  </module>
+
+  <module>
     <name>faceExpressionImage5GTour</name>
     <parameters></parameters>
     <node>console</node>
   </module>
 
   <module>
-    <name>voiceActivationDetection</name>
+    <name>sileroVAD</name>
     <parameters></parameters>
     <environment>YARP_LOG_PROCESS_LABEL=VAD</environment>
     <node>console</node>
@@ -85,6 +91,12 @@
     <from>/faceExpressionImage/image:o</from>
     <to>/robot/faceDisplay/image:i</to>
     <protocol>fast_tcp</protocol>
+  </connection>
+
+  <connection>
+    <from>/notification:i</from>
+    <to>/audioPlayerWrapper/audio:i</to>
+    <protocol>tcp+recv.portmonitor+file.soundfilter_resample+type.dll+channel.0+frequency.16000</protocol>
   </connection>
 
   <connection>

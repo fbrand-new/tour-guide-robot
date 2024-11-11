@@ -42,7 +42,7 @@ bool VoiceActivationDetectionModule::configure(yarp::os::ResourceFinder &rf)
     }
     else
     {
-        m_vadThreshold = rf.find("vad_threshold").asInt32();
+        m_vadThreshold = rf.find("vad_threshold").asFloat32();
     }
 
     if (!rf.check("vad_gap_allowance", "vad_gap_allowance"))

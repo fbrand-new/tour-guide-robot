@@ -22,15 +22,15 @@ bool WakeWordModule::configure(yarp::os::ResourceFinder &rf) {
                                                   "Name of the input port to stop streaming")
                                              .asString();
 
-    std::string accessKey = rf.check("accessKey", yarp::os::Value(""),
+    std::string accessKey = rf.check("accessKey", yarp::os::Value("E3HSLWAlzc76SFsflAy+9NSJotzp4u1VQIKU63sdiyc9CzqQL8HRDg=="),
                                                   "Porcupine access key")
                                              .asString();
 
-    std::string modelPath = rf.check("model_path", yarp::os::Value("/home/user1/share/porcupine/lib/common/porcupine_params.pv"),
+    std::string modelPath = rf.check("model_path", yarp::os::Value("/usr/local/src/robot/speech/tour-guide-robot/aux_modules/speechProcessing/wakeWordDetection/porcupine/lib/common/porcupine_params.pv"),
                                                   "Path to wake word detector model")
                                              .asString();
 
-    std::string keywordPath = rf.check("keyword_path", yarp::os::Value("/home/user1/share/porcupine_playground/hey-r-one_en_linux_v3_0_0.ppn"),
+    std::string keywordPath = rf.check("keyword_path", yarp::os::Value("/usr/local/src/robot/speech/tour-guide-robot/Hey-R-one_en_linux_v3_0_0.ppn"),
                                                   "Path to ppn file containing keyword info")
                                              .asString();
 
@@ -38,7 +38,7 @@ bool WakeWordModule::configure(yarp::os::ResourceFinder &rf) {
                                                   "Sensivity of wake word detector, higher will mean more false positives less false negatives")
                                              .asFloat32();
 
-    std::string notification_audio_file = rf.check("notification_audio_file",yarp::os::Value("sound.wav")).asString();
+    std::string notification_audio_file = rf.check("notification_audio_file",yarp::os::Value("/usr/local/src/robot/speech/tour-guide-robot/mixkit-confirmation-tone-2867.wav")).asString();
 
     std::string notification_port_name = rf.check("notification_port_name", yarp::os::Value("/notification:o")).asString();
 
