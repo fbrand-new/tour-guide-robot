@@ -27,7 +27,7 @@ public:
 private:
     yarp::os::ResourceFinder& m_rf;
     yarp::os::BufferedPort<yarp::sig::Sound > m_audioRecPort;
-    yarp::os::BufferedPort<yarp::dev::AudioRecorderStatus> m_audioStatusPort;
+    yarp::os::BufferedPort<yarp::sig::AudioRecorderStatus> m_audioStatusPort;
     std::mutex&             m_drawing_mutex;
     std::recursive_mutex    m_methods_mutex;
     std::string             m_imagePath;
