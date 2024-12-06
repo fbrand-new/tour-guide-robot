@@ -1,18 +1,27 @@
 FROM elandini84/r1images:tourCore2_cuda.11.7.1-cudnn8_iron_stable
 
-#### Install python packages ####
-RUN python3 -m pip install --upgrade pip
-RUN python3 -m pip install --upgrade setuptools
-RUN python3 -m pip install numpy opencv-contrib-python scikit-learn 
-
 LABEL maintainer="Francesco Brand"
 # Non-interactive installation mode
 ENV DEBIAN_FRONTEND=noninteractive
 
 ARG user_name="user1" 
 ARG robot_code="/usr/local/src/robot"
+ARG njobs = 8
 USER user1
 WORKDIR /home/user1/
+
+
+#### Install python packages ####
+RUN python3 -m pip install --upgrade pip setuptools numpy opencv-contrib-python scikit-learn 
+
+#### Install onnxruntime
+RUN cd ${robot_code} && \
+    wget https://github.com/microsoft/onnxruntime/releases/download/v1.20.0/onnxruntime-linux-x64-1.20.0.tgz && \
+    tar -xvf onnxruntime-linux-x64-1.20.0.tgz
+
+#### Clone SileroVAD repo to get the onnx file
+RUN cd ${robot_code} && \
+    git clone https://github.com/snakers4/silero-vad.git
 
 ### Install google from vcpkg ############################################# START ####
 RUN sudo apt-get update && sudo apt-get install -y curl zip unzip tar
@@ -48,18 +57,17 @@ RUN git clone https://github.com/D7EAD/liboai.git && \
     -DCMAKE_POSITION_INDEPENDENT_CODE=true && \
     cd build && make -j8 && sudo make install
 
-# TODO: this should go into the entrypoint
 # # Configure openai credentials
-# RUN echo "\n" >> /home/${user_name}/.bashrc && \
-#     echo "set -a" >> /home/${user_name}/.bashrc && \
-#     echo "source ~/.env/config.env" >> /home/${user_name}/.bashrc && \
-#     echo "set +a" >> /home/${user_name}/.bashrc
+RUN echo "\n" >> /home/${user_name}/.bashrc && \
+    echo "set -a" >> /home/${user_name}/.bashrc && \
+    echo "source ~/.env/config.env" >> /home/${user_name}/.bashrc && \
+    echo "set +a" >> /home/${user_name}/.bashrc
 
 # Install yarp-devices-llm
 ARG llm_branch
 
 WORKDIR ${robot_code}
-RUN git clone https://github.com/robotology/yarp-devices-llm -b ${llm_branch} && \
+RUN git clone https://github.com/robotology/yarp-devices-llm -b master && \
     cd yarp-devices-llm && mkdir build && \
     cmake -B build -S . \
     -DCMAKE_TOOLCHAIN_FILE=/home/${user_name}/Downloads/vcpkg/scripts/buildsystems/vcpkg.cmake \
@@ -71,3 +79,11 @@ ENV PATH=$PATH:${YARP_DEVICES_LLM_DIR}/bin
 
 ENV TOUR_GUIDE_ROBOT_SOURCE_DIR=${robot_code}/tour-guide-robot
 ENV YARP_DATA_DIRS=${YARP_DATA_DIRS}:${TOUR_GUIDE_ROBOT_SOURCE_DIR}/build/share/tour-guide-robot
+
+
+#### TEMPORARY: switch to Misael Branch with speech ####
+RUN cd $ROBOT_CODE && \
+    git remote add mga-97 https://github.com/mga-97/tour-guide-robot && \
+    git fetch mga-97 feature/listening-expression && \
+    cd build && cmake -DWAKE_WORD=ON .. && \
+    make -j${n_jobs}

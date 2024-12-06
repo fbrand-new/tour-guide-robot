@@ -1,0 +1,75 @@
+<application>
+  <name>speechPipelineTrancription</name>
+
+  <dependencies>
+  </dependencies>
+
+  <!-- recording audio from microphone -->
+  <module>
+    <name>yarprobotinterface</name>
+    <parameters>--config micAudioStream.xml</parameters>
+    <node>r1-torso</node>
+  </module>
+
+  <module>
+    <name>wakeWordDetection</name>
+    <parameters></parameters>
+    <environment>YARP_LOG_PROCESS_LABEL=WAKE-WORD</environment>
+    <node>console</node>
+  </module>
+
+  <module>
+    <name>sileroVAD</name>
+    <parameters>--model_path ${ROBOT_CODE}/silero-vad/src/silero_vad/data/silero_vad.onnx</parameters>
+    <environment>YARP_LOG_PROCESS_LABEL=VAD</environment>
+    <node>console</node>
+  </module>
+
+  <module>
+    <name>yarprobotinterface</name>
+    <parameters>--context speech --from googleTranscription.ini</parameters>
+    <node>console</node>
+  </module>
+
+  <!-- LLM device -->
+  <module>
+    <name>yarprobotinterface</name>
+    <parameters>--config LLMDevice.xml</parameters>
+    <workdir>$ENV{ROBOT_CODE}/yarp-devices-llm/assets</workdir>
+    <node>console</node>
+  </module>
+
+  <module>
+    <name>yarprobotinterface</name>
+    <parameters>--context speech --from googleSynthesizer.ini</parameters>
+    <node>console</node>
+  </module>
+
+
+  <connection>
+    <from>/audioRecorder_nws/audio:o</from>
+    <to>/wake/audio:i</to>
+    <protocol>tcp+recv.portmonitor+file.soundfilter_resample+type.dll+channel.0+frequency.16000</protocol>
+  </connection>
+
+  <connection>
+    <from>/wake/audio:o</from>
+    <to>/vad/audio:i</to>
+    <protocol>tcp+recv.portmonitor+file.soundfilter_resample+type.dll+channel.0+frequency.16000</protocol>
+  </connection>
+
+  <connection>
+    <from>/vad/audio:o</from>
+    <to>/speechTranscription_nws/sound:i</to>
+    <protocol>tcp+recv.portmonitor+file.soundfilter_resample+type.dll+channel.0+frequency.16000</protocol>
+  </connection>
+
+  <connection>
+    <from>/vad/rpc:o</from>
+    <to>/wake/rpc:i</to>
+    <protocol>fast_tcp</protocol>
+  </connection>
+
+
+
+</application>
