@@ -162,7 +162,7 @@ RUN sudo apt-get update && sudo apt-get install -y gazebo-common gazebo libgazeb
 # Gazebo Plugins
 USER ${robotology_install_user}
 WORKDIR ${robotology_install_folder}
-RUN git clone https://github.com/robotology/gazebo-yarp-plugins -b devel
+RUN git clone https://github.com/robotology/gazebo-yarp-plugins -b master
 RUN cd gazebo-yarp-plugins && mkdir build && cd build && \
     cmake .. \
     -DCMAKE_BUILD_TYPE=Release \
