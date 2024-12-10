@@ -5,7 +5,7 @@ LABEL maintainer="Ettore Landini"
 ARG ros_distro
 ARG yarp_branch="master"
 ARG ros2_dev_remote="robotology"
-ARG ros2_dev_branch=${ros_distro}
+ARG ros2_dev_branch=${yarp_branch}
 
 # Non-interactive installation mode
 ENV DEBIAN_FRONTEND=noninteractive
@@ -174,7 +174,7 @@ ENV GazeboYARPPlugins_DIR=${robotology_install_folder}/gazebo-yarp-plugins/build
 # CER
 USER ${robotology_install_user}
 WORKDIR ${robotology_install_folder}
-RUN git clone https://github.com/elandini84/cer.git -b fix/compatibility/yarp_master
+RUN git clone https://github.com/robotology/cer.git
 RUN cd cer && mkdir build && cd build && cmake .. \
                 -DCMAKE_BUILD_TYPE=Release \
                 -DENABLE_cermod_cerDoubleLidar=ON \
