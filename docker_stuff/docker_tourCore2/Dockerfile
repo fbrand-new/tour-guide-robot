@@ -5,7 +5,7 @@ LABEL maintainer="Ettore Landini"
 ARG ros_distro
 ARG yarp_branch="master"
 ARG ros2_dev_remote="robotology"
-ARG ros2_dev_branch=${ros_distro}
+ARG ros2_dev_branch=${yarp_branch}
 
 # Non-interactive installation mode
 ENV DEBIAN_FRONTEND=noninteractive
