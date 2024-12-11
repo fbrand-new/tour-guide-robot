@@ -10,7 +10,7 @@
 <robot name="test" build="2" portprefix="test" xmlns:xi="http://www.w3.org/2001/XInclude">
     <devices>
         <device name="dev1" type="whisperSpeechTranscription" >
-            <param extern-name="model" name="model"> /home/user1/yarp-device-speechTranscription-whisper/build/share/WhisperTranscribe/contexts/whisperTranscribe_demo/ggml-base.en.bin/ggml-base.en.bin </param>
+            <param extern-name="model" name="model"> /usr/local/src/robot/yarp-device-speechTranscription-whisper/build/share/WhisperTranscribe/contexts/whisperTranscribe_demo/ggml-base.en.bin/ggml-base.en.bin </param>
         </device>
 
         <device name="dev2" type="speechTranscription_nws_yarp">
