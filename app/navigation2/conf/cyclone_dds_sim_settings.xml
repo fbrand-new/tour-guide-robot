@@ -3,7 +3,7 @@
       <General>
          <AllowMulticast>false</AllowMulticast>
          <Interfaces>
-            <NetworkInterface address="127.0.0.1" priority="default"/>
+            <NetworkInterface address="172.17.0.1" priority="default"/>
          </Interfaces>
       </General>
       <Discovery>
