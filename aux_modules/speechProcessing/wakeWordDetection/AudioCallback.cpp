@@ -62,7 +62,7 @@ void AudioCallback::onRead(yarp::sig::Sound &soundReceived) {
     else {
         if (m_prevStreaming)
         {
-            colorEars(0, 0, 255);
+            colorEars(255, 255, 255);
         }
         
         processFrame(soundReceived);
@@ -107,7 +107,7 @@ bool AudioCallback::processSliceOfFrame(const size_t &numSamplesInFrame, int cur
     bool keyWordDetected = false;
     if (keyword_index != -1) {
         yCDebug(WAKEWORDDETECTOR) <<  "keyword detected!!!!!!!!!!!";
-        colorEars(0, 255, 0);
+        colorEars(0, 255, 255);
 
         // Send notification sound to port
         this->play();
@@ -147,7 +147,7 @@ void AudioCallback::sendRemainingSamples() {
 bool AudioCallback::colorEars(int r, int g, int b)
 {
     yarp::os::Bottle bot;
-    bot.addString("color_ears");
+    bot.addString("notify_eyes");
     bot.addFloat32(r);
     bot.addFloat32(g);
     bot.addFloat32(b);

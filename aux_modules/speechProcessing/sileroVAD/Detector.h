@@ -32,13 +32,13 @@ public:
             std::string wakeWordClientPort);
     using TypedReaderCallback<yarp::sig::Sound>::onRead;
     void onRead(yarp::sig::Sound& soundReceived) override;
-
+    float m_vadThreshold;
+    int m_vadGapAllowance;
+    
 private:
     const int m_vadFrequency;
-    const int m_vadGapAllowance;
     const bool m_vadSaveGap;
     const int m_vadNumSamples;
-    const float m_vadThreshold;
     const int m_vadSavePriorToDetection;
 
     std::deque<std::vector<int16_t>> m_soundToSend; /** Internal sound buffer. **/

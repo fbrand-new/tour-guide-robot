@@ -13,13 +13,15 @@ target_include_directories(${AUX_NAME}
     ${CMAKE_CURRENT_SOURCE_DIR}
     ${CMAKE_CURRENT_BINARY_DIR}
     $<TARGET_PROPERTY:WakeMsgs,INTERFACE_INCLUDE_DIRECTORIES>
-    /usr/local/src/robot/onnxruntime-linux-x64-1.20.0/include
+    $<TARGET_PROPERTY:SileroVADMsgs,INTERFACE_INCLUDE_DIRECTORIES>
+    /usr/local/src/robot/onnxruntime-linux-x64-1.20.1/include
 )
 target_sources(${AUX_NAME}
   PRIVATE
     main.cpp
     Detector.h
     Detector.cpp
+    SileroVADServer.cpp
     VoiceActivationDetectionModule.h
     VoiceActivationDetectionModule.cpp
 )
@@ -33,7 +35,8 @@ target_link_libraries(${AUX_NAME}
   PRIVATE
     ${YARP_LIBRARIES}
     WakeMsgs
-    /usr/local/src/robot/onnxruntime-linux-x64-1.20.0/lib/libonnxruntime.so)
+    SileroVADMsgs
+    /usr/local/src/robot/onnxruntime-linux-x64-1.20.1/lib/libonnxruntime.so)
 
 
 install(TARGETS ${AUX_NAME} DESTINATION bin)
