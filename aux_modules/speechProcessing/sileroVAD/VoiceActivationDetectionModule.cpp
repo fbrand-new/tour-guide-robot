@@ -17,7 +17,7 @@ bool VoiceActivationDetectionModule::configure(yarp::os::ResourceFinder &rf)
                                        "The name of the input port for the audio.")
                                   .asString();
 
-    std::string wakeWordClientPort = rf.check("wake_wrod_client_port_name", yarp::os::Value("/vad/rpc:o"),
+    std::string wakeWordClientPort = rf.check("wake_word_client_port_name", yarp::os::Value("/vad/rpc:o"),
                                             "Name of rpc port to inform wake detector when audio clip is done")
                                        .asString();
 
@@ -54,22 +54,22 @@ bool VoiceActivationDetectionModule::configure(yarp::os::ResourceFinder &rf)
         m_vadGapAllowance = rf.find("vad_gap_allowance").asInt32();
     }
 
-    if (!rf.check("vad_gap_allowance", "vad_gap_allowance"))
+    if (!rf.check("vad_save_gap", "vad_save_gap"))
     {
         yCDebug(VADAUDIOPROCESSORCREATOR) << "Using default 'vad_save_gap' parameter of " << VAD_SAVE_GAP;
     }
     else
     {
-        m_vadSaveGap = rf.find("vad_gap_allowance").asInt32();
+        m_vadSaveGap = rf.find("vad_save_gap").asBool();
     }
 
-    if (!rf.check("vad_gap_allowance", "vad_gap_allowance"))
+    if (!rf.check("vad_save_prior_to_detection", "vad_save_prior_to_detection"))
     {
         yCDebug(VADAUDIOPROCESSORCREATOR) << "Using default 'vad_save_prior_to_detection' parameter of " << VAD_SAVE_PRIOR_TO_DETECTION;
     }
     else
     {
-        m_vadSavePriorToDetection = rf.find("vad_gap_allowance").asInt32();
+        m_vadSavePriorToDetection = rf.find("vad_save_prior_to_detection").asInt32();
     }
 
     if (!rf.check("model_path", "model_path"))

@@ -22,7 +22,7 @@ bool WakeWordModule::configure(yarp::os::ResourceFinder &rf) {
                                                   "Name of the input port to stop streaming")
                                              .asString();
 
-    std::string accessKey = rf.check("accessKey", yarp::os::Value(""),
+    std::string accessKey = rf.check("accessKey", yarp::os::Value("E3HSLWAlzc76SFsflAy+9NSJotzp4u1VQIKU63sdiyc9CzqQL8HRDg=="),
                                                   "Porcupine access key")
                                              .asString();
 
@@ -38,11 +38,9 @@ bool WakeWordModule::configure(yarp::os::ResourceFinder &rf) {
                                                   "Sensivity of wake word detector, higher will mean more false positives less false negatives")
                                              .asFloat32();
 
-    std::string notification_audio_file = rf.check("notification_audio_file",yarp::os::Value("/usr/local/src/robot/speech/tour-guide-robot/mixkit-confirmation-tone-2867.wav")).asString();
+    std::string notification_port_name = rf.check("notification_port_name", yarp::os::Value("/wake/notification:o")).asString();
 
-    std::string notification_port_name = rf.check("notification_port_name", yarp::os::Value("/notification:o")).asString();
-
-    m_callback = std::make_shared<AudioCallback>(audioPortOutName, accessKey, modelPath, keywordPath, faceExpressionPort, detectorSensitivity,notification_audio_file,notification_port_name);
+    m_callback = std::make_shared<AudioCallback>(audioPortOutName, accessKey, modelPath, keywordPath, faceExpressionPort, detectorSensitivity, notification_port_name);
 
     if (!m_audioPortIn.open(audioPortInName))
     {

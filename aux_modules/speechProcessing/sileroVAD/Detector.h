@@ -41,9 +41,9 @@ private:
     const int m_vadNumSamples;
     const int m_vadSavePriorToDetection;
 
-    std::deque<std::vector<int16_t>> m_soundToSend; /** Internal sound buffer. **/
-    std::vector<float> m_currentSoundBufferNorm;
-    std::vector<int16_t> m_currentSoundBuffer;
+    std::deque<std::vector<int16_t>> m_soundToSend;
+    std::vector<float> m_currentSoundBufferNorm; // Normalised for silero model
+    std::vector<int16_t> m_currentSoundBuffer; // Original for downstream processing/synthesis
     std::vector<float> m_context;
     int m_fillCount; // keep track of up to what index the buffer is full
     bool m_soundDetected{false};
@@ -64,7 +64,7 @@ private:
     Ort::AllocatorWithDefaultOptions m_allocator;
     Ort::MemoryInfo m_memory_info = Ort::MemoryInfo::CreateCpu(OrtArenaAllocator, OrtMemTypeCPU);
 
-    // Inputs
+    // Model Inputs
     std::vector<Ort::Value> m_ort_inputs;
     
     std::vector<const char *> m_input_node_names = {"input", "state", "sr"};
@@ -77,7 +77,7 @@ private:
     const int64_t m_state_node_dims[3] = {2, 1, 128}; 
     const int64_t m_sr_node_dims[1] = {1};
 
-    // Outputs
+    // Model Outputs
     std::vector<Ort::Value> m_ort_outputs;
     std::vector<const char *> m_output_node_names = {"output", "stateN"};
 

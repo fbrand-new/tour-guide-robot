@@ -7,22 +7,8 @@
   <!-- recording audio from microphone -->
   <module>
     <name>yarprobotinterface</name>
-    <parameters>--config micAudio.xml</parameters>
+    <parameters>--config micAudioStream.xml</parameters>
     <node>r1-torso</node>
-  </module>
-
-  <!-- saving the filtered audio received from the port to filtered.wav -->
-  <module>
-    <name>yarprobotinterface</name>
-    <parameters>--context speechPipeline --from audioPlayerToFileFiltered.ini</parameters>
-    <node>console</node>
-  </module>
-
-  <!-- original audio -->
-  <module>
-    <name>yarprobotinterface</name>
-    <parameters>--context speechPipeline --from audioPlayerToFileOrig.ini</parameters>
-    <node>console</node>
   </module>
 
   <module>
@@ -44,34 +30,71 @@
   </module>
 
   <module>
-    <name>sileroVAD</name>
-    <parameters></parameters>
-    <environment>YARP_LOG_PROCESS_LABEL=VAD</environment>
-    <node>console</node>
-  </module>
-
-  <module>
     <name>wakeWordDetection</name>
     <parameters></parameters>
     <environment>YARP_LOG_PROCESS_LABEL=WAKE-WORD</environment>
     <node>console</node>
+    <workdir>/usr/local/src/robot/speech/tour-guide-robot/build/bin</workdir>
   </module>
+
+  <module>
+    <name>sileroVAD</name>
+    <parameters></parameters>
+    <environment>YARP_LOG_PROCESS_LABEL=VAD</environment>
+    <node>console</node>
+    <workdir>/usr/local/src/robot/speech/tour-guide-robot/build/bin</workdir>
+  </module>
+
+  <module>
+    <name>play_notification.py</name>
+    <parameters></parameters>
+    <node>r1-face</node>
+    <workdir>/usr/local/src/robot/tour-guide-robot/aux_modules/speechProcessing/wakeWordDetection</workdir>
+  </module>
+
+  <!-- speech synthesizer -->
+  <module>
+     <name>yarprobotinterface</name>
+     <parameters>--context google --from googleSynthesizer.ini</parameters>
+     <node>console1</node>
+  </module>
+
+  <!-- LLM device -->
+  <module>
+     <name>yarprobotinterface</name>
+     <parameters>--config LLMDevice.xml</parameters>
+     <workdir>$ENV{ROBOT_CODE}/yarp-devices-llm/assets</workdir>
+     <node>console</node>
+  </module>
+
+  <module>
+    <name>LLMStream</name>
+    <parameters>--remote /LLM_nws/rpc:i --local /LLMStream --stream_answer_only 1</parameters>
+    <node>console</node>
+  </module>
+
+  <module>
+    <name>cut_out_string.py</name>
+    <parameters></parameters>
+    <node>console</node>
+    <workdir>/usr/local/src/robot/speech/tour-guide-robot/aux_modules</workdir>
+  </module>
+
+  <module>
+      <name>yarprobotinterface</name>
+      <parameters>--context google --from googleTranscription.ini</parameters>
+      <node>console-llm</node>
+  </module>
+
+  <connection>
+    <from>/audioRecorder_nws/audio:o</from>
+    <to>/wake/audio:i</to>
+    <protocol>tcp+recv.portmonitor+file.soundfilter_resample+type.dll+channel.0+frequency.16000</protocol>
+  </connection>
 
   <connection>
     <from>/wake/audio:o</from>
     <to>/vad/audio:i</to>
-    <protocol>tcp+recv.portmonitor+file.soundfilter_resample+type.dll+channel.0+frequency.16000</protocol>
-  </connection>
-
-  <connection>
-    <from>/vad/audio:o</from>
-    <to>/filtered/audio:i</to>
-    <protocol>tcp+recv.portmonitor+file.soundfilter_resample+type.dll+channel.0+frequency.16000</protocol>
-  </connection>
-
-  <connection>
-    <from>/audioRecorder_nws/audio:o</from>
-    <to>/original/audio:i</to>
     <protocol>tcp+recv.portmonitor+file.soundfilter_resample+type.dll+channel.0+frequency.16000</protocol>
   </connection>
 
@@ -82,21 +105,15 @@
   </connection>
 
   <connection>
-    <from>/audioRecorder_nws/audio:o</from>
-    <to>/wake/audio:i</to>
-    <protocol>tcp+recv.portmonitor+file.soundfilter_resample+type.dll+channel.0+frequency.16000</protocol>
-  </connection>
-
-  <connection>
     <from>/faceExpressionImage/image:o</from>
     <to>/robot/faceDisplay/image:i</to>
     <protocol>fast_tcp</protocol>
   </connection>
 
   <connection>
-    <from>/notification:i</from>
-    <to>/audioPlayerWrapper/audio:i</to>
-    <protocol>tcp+recv.portmonitor+file.soundfilter_resample+type.dll+channel.0+frequency.16000</protocol>
+    <from>/wake/notification:o</from>
+    <to>/wake_notification:i</to>
+    <protocol>fast_tcp</protocol>
   </connection>
 
   <connection>
