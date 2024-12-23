@@ -92,7 +92,7 @@ void EarsThread::run()
     float percentage = 0.5;
 
     yWarning("Check mic");
-    yarp::dev::AudioRecorderStatus *rec_status = m_audioStatusPort.read(false);
+    yarp::sig::AudioRecorderStatus *rec_status = m_audioStatusPort.read(false);
     if (rec_status)
     {
         m_micIsEnabled = rec_status->enabled; //&& rec_status->current_buffer_size > 0;
