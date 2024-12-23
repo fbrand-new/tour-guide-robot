@@ -5,7 +5,7 @@
 #define VAD_MODULE_H
 
 #include <yarp/os/RFModule.h>
-#include <yarp/dev/AudioRecorderStatus.h>
+#include <yarp/sig/AudioRecorderStatus.h>
 #include "Detector.h"
 
 #include "SileroVADServer.h"
@@ -20,7 +20,7 @@ private:
     static constexpr int VAD_GAP_ALLOWANCE_DEFAULT = 18; // In packets of 32 ms
     static constexpr int VAD_SAVE_PRIOR_TO_DETECTION = 15; // In packets of 32 ms
     const std::string MODEL_PATH = "/usr/local/src/robot/silero-vad/src/silero_vad/data/silero_vad.onnx";
-    
+
     std::unique_ptr<SileroVADServer> m_rpcServer;
     yarp::os::RpcServer m_rpcPort;
 
