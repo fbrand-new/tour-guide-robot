@@ -172,6 +172,19 @@ bool FaceExpressionImageModule::respondString(const Bottle& command, Bottle& rep
         reply.addVocab32(yarp::os::Vocab32::encode("ok"));
         return true;
     }
+    else if (cmd == "notify_eyes")
+    {
+        if (m_thread_eyes) m_thread_eyes->m_notificationEnabled = !m_thread_eyes->m_notificationEnabled;
+        if (command.size() == 4)
+        {
+            float vr = command.get(1).asFloat32();
+            float vg = command.get(2).asFloat32();
+            float vb = command.get(3).asFloat32();
+            if (m_thread_eyes) m_thread_eyes->m_notificationColor =  cv::Scalar(vr, vg, vb);
+        }
+        reply.addVocab32(yarp::os::Vocab32::encode("ok"));
+        return true;
+    }
     return false;
 }
 

@@ -1,7 +1,11 @@
+// SPDX-FileCopyrightText: 2022 Humanoid Sensing and Perception, Istituto Italiano di Tecnologia
+// SPDX-License-Identifier: BSD-3-Clause
+
+
 #include <yarp/os/Network.h>
 #include <yarp/os/ResourceFinder.h>
 
-#include "WakeWordModule.h"
+#include "VoiceActivationDetectionModule.h"
 
 int main(int argc, char *argv[])
 {
@@ -18,7 +22,7 @@ int main(int argc, char *argv[])
     rf.setVerbose(true);
     rf.configure(argc, argv);
 
-    WakeWordModule speechModule;
+    VoiceActivationDetectionModule speechModule;
 
     return speechModule.runModule(rf);
 }

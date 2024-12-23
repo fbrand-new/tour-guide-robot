@@ -68,6 +68,8 @@ public:
     void activateBlink(bool activate);
     void enableDrawing(bool activate);
     void resetToDefault(bool _blink = true);
+    bool m_notificationEnabled = false;
+    cv::Scalar m_notificationColor = cv::Scalar(255,255,255);
 
 private:
     bool m_doBlink = false;

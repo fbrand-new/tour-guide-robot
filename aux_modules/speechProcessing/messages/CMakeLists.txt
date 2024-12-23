@@ -1,1 +1,2 @@
 add_subdirectory(wakeWordMsgs)
+add_subdirectory(sileroVADMsgs)

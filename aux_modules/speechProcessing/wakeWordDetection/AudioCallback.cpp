@@ -1,5 +1,7 @@
 #include "AudioCallback.h"
 
+#include <yarp/sig/all.h>
+#include <yarp/os/Bottle.h>
 #include <iostream>
 #include <vector>
 
@@ -10,8 +12,12 @@ AudioCallback::AudioCallback(const std::string audioOutName,
                             const std::string accessKey,
                             const std::string modelPath,
                             const std::string keywordPath,
-                            const float sensitivity) {
+                            const std::string faceExpressionOutName,
+                            const float sensitivity,
+                            const std::string notification_port_name) {
     m_audioOut.open(audioOutName);
+    m_faceOutput.open(faceExpressionOutName);
+    m_notification_out.open(notification_port_name);
     
     const char *keywords = keywordPath.c_str();
     pv_status_t porcupine_status = pv_porcupine_init(accessKey.c_str(), modelPath.c_str(), 1, &keywords, &sensitivity, &m_porcupine);
@@ -52,8 +58,14 @@ void AudioCallback::onRead(yarp::sig::Sound &soundReceived) {
         m_audioOut.write();
     }
     else {
+        if (m_prevStreaming)
+        {
+            colorEyes(255, 255, 255);
+        }
+        
         processFrame(soundReceived);
-    }    
+    }
+    m_prevStreaming = m_currentlyStreaming;
 }
 
 void AudioCallback::processFrame(yarp::sig::Sound &soundReceived) {
@@ -93,6 +105,9 @@ bool AudioCallback::processSliceOfFrame(const size_t &numSamplesInFrame, int cur
     bool keyWordDetected = false;
     if (keyword_index != -1) {
         yCDebug(WAKEWORDDETECTOR) <<  "keyword detected!!!!!!!!!!!";
+        colorEyes(0, 255, 255);
+        sendNotification();
+        
         keyWordDetected = true;
 
         // resize buffer to contain a few previous slices of audio + have space for all remaining samples in the current audioframe
@@ -125,8 +140,43 @@ void AudioCallback::sendRemainingSamples() {
     m_audioOut.write();
 }
 
+bool AudioCallback::colorEyes(int r, int g, int b)
+{
+    yarp::os::Bottle bot;
+    bot.addString("notify_eyes");
+    bot.addFloat32(r);
+    bot.addFloat32(g);
+    bot.addFloat32(b);
+    bool result = m_faceOutput.write(bot);
+    if (result)
+    {
+        yCDebug(WAKEWORDDETECTOR) << "Eye color changed successfully to:" << r << g << b;
+        return true;
+    }
+    else
+    {
+        yCError(WAKEWORDDETECTOR) << "Eye color failed to change";
+        return false;
+    }
+}
+
 void AudioCallback::printPorcupineErrorMessage(char **messageStack, int32_t messageStackDepth) {
     for (int32_t i = 0; i < messageStackDepth; i++) {
         yCError(WAKEWORDDETECTOR) << messageStack[i];
+    }
+}
+
+void AudioCallback::sendNotification()
+{
+    yarp::os::Bottle bot;
+    bot.addString("play_sound");
+    bool result = m_notification_out.write(bot);
+    if (result)
+    {
+        yCDebug(WAKEWORDDETECTOR) << "Sent command to play notification sound";
+    }
+    else
+    {
+        yCError(WAKEWORDDETECTOR) << "Failed to send command to play notification sound";
     }
 }
