@@ -5,7 +5,7 @@ LABEL maintainer="Ettore Landini"
 ARG ros_distro
 ARG yarp_branch="master"
 ARG ros2_dev_remote="robotology"
-ARG ros2_dev_branch=${ros_distro}
+ARG ros2_dev_branch=${yarp_branch}
 
 # Non-interactive installation mode
 ENV DEBIAN_FRONTEND=noninteractive
@@ -162,7 +162,7 @@ RUN sudo apt-get update && sudo apt-get install -y gazebo-common gazebo libgazeb
 # Gazebo Plugins
 USER ${robotology_install_user}
 WORKDIR ${robotology_install_folder}
-RUN git clone https://github.com/robotology/gazebo-yarp-plugins -b devel
+RUN git clone https://github.com/robotology/gazebo-yarp-plugins -b master
 RUN cd gazebo-yarp-plugins && mkdir build && cd build && \
     cmake .. \
     -DCMAKE_BUILD_TYPE=Release \
@@ -174,7 +174,7 @@ ENV GazeboYARPPlugins_DIR=${robotology_install_folder}/gazebo-yarp-plugins/build
 # CER
 USER ${robotology_install_user}
 WORKDIR ${robotology_install_folder}
-RUN git clone https://github.com/elandini84/cer.git -b fix/compatibility/yarp_master
+RUN git clone https://github.com/robotology/cer.git
 RUN cd cer && mkdir build && cd build && cmake .. \
                 -DCMAKE_BUILD_TYPE=Release \
                 -DENABLE_cermod_cerDoubleLidar=ON \
@@ -253,7 +253,7 @@ RUN echo "source ${robotology_install_folder}/yarp-devices-ros2/ros2_interfaces_
 RUN echo 'exec "$@"' >> /home/user1/.entrypoint.sh
 RUN chmod +x /home/user1/.entrypoint.sh
 
-WORKDIR ${user1_home}/tour-guide-robot
+WORKDIR ${user1_home}
 RUN sudo updatedb
 ENTRYPOINT [ "/home/user1/.entrypoint.sh" ]
 CMD ["bash"]

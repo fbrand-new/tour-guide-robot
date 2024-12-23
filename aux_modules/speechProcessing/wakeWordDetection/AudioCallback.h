@@ -5,6 +5,7 @@
 #include <yarp/sig/Sound.h>
 #include <yarp/os/RpcClient.h>
 #include <yarp/os/BufferedPort.h>
+#include <yarp/os/Port.h>
 #include <yarp/os/LogStream.h>
 
 #include <memory>
@@ -21,11 +22,14 @@ public:
                     const std::string accessKey,
                     const std::string modelPath,
                     const std::string keywordPath,
-                    const float sensitivity);
+                    const std::string faceExpressionOutName,
+                    const float sensitivity,
+                    const std::string notification_port_name);
 
     using TypedReaderCallback<yarp::sig::Sound>::onRead;
     void onRead(yarp::sig::Sound& soundReceived) override;
     bool m_currentlyStreaming = false; // stream until VAD reports that its done detecting voice
+    bool m_prevStreaming = false;
 
 
 private:    
@@ -41,11 +45,15 @@ private:
     std::vector<int16_t> m_remainingSamplesBuffer; // once wake word is detected gather all the following samples to send
 
     yarp::os::BufferedPort<yarp::sig::Sound> m_audioOut;
+    yarp::os::Port m_faceOutput;
+    yarp::os::Port m_notification_out;
 
     void processFrame(yarp::sig::Sound &soundReceived);
     bool processSliceOfFrame(const size_t &num_samples, int currentSampleIdx, int &m_remainingSamplesBufferIdx);
     void sendRemainingSamples();
     void printPorcupineErrorMessage(char **message_stack, int32_t message_stack_depth);
+    bool colorEyes(int r, int g, int b);
+    void sendNotification();
 };
 
 #endif

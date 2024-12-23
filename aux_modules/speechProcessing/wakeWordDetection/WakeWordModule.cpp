@@ -18,23 +18,29 @@ bool WakeWordModule::configure(yarp::os::ResourceFinder &rf) {
                                                   "Name of the input port to stop streaming")
                                              .asString();
 
+    std::string faceExpressionPort = rf.check("face_server_port_name", yarp::os::Value("/wake/face:o"),
+                                                  "Name of the input port to stop streaming")
+                                             .asString();
+
     std::string accessKey = rf.check("accessKey", yarp::os::Value("E3HSLWAlzc76SFsflAy+9NSJotzp4u1VQIKU63sdiyc9CzqQL8HRDg=="),
                                                   "Porcupine access key")
                                              .asString();
 
-    std::string modelPath = rf.check("model_path", yarp::os::Value("/home/user1/share/porcupine/lib/common/porcupine_params.pv"),
+    std::string modelPath = rf.check("model_path", yarp::os::Value("/usr/local/src/robot/speech/tour-guide-robot/aux_modules/speechProcessing/wakeWordDetection/porcupine/lib/common/porcupine_params.pv"),
                                                   "Path to wake word detector model")
                                              .asString();
 
-    std::string keywordPath = rf.check("keyword_path", yarp::os::Value("/home/user1/share/porcupine_playground/hey-r-one_en_linux_v3_0_0.ppn"),
+    std::string keywordPath = rf.check("keyword_path", yarp::os::Value("/usr/local/src/robot/speech/tour-guide-robot/Hey-R-one_en_linux_v3_0_0.ppn"),
                                                   "Path to ppn file containing keyword info")
                                              .asString();
 
     float detectorSensitivity = rf.check("detector_sensitivity", yarp::os::Value(0.6),
-                                                  "Sensivity of wake word detector, higher will mean more false positves less false negatives")
+                                                  "Sensivity of wake word detector, higher will mean more false positives less false negatives")
                                              .asFloat32();
 
-    m_callback = std::make_shared<AudioCallback>(audioPortOutName, accessKey, modelPath, keywordPath, detectorSensitivity);
+    std::string notification_port_name = rf.check("notification_port_name", yarp::os::Value("/wake/notification:o")).asString();
+
+    m_callback = std::make_shared<AudioCallback>(audioPortOutName, accessKey, modelPath, keywordPath, faceExpressionPort, detectorSensitivity, notification_port_name);
 
     if (!m_audioPortIn.open(audioPortInName))
     {

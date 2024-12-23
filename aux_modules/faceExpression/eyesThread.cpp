@@ -189,9 +189,18 @@ bool EyesThread::updateBlink(int index)
     lock_guard<mutex> faceguard(m_drawing_mutex);
 
     // Copy eyes
-    ((Mat)blinkEye[indexes[index]]).copyTo(m_face(cv::Rect(leftEye_x,  leftEye_y,  eyeWidth, eyeHeight)));
+    cv::Mat eye;
+    ((Mat)blinkEye[indexes[index]]).copyTo(eye);
+    if (m_notificationEnabled)
+    {
+        cv::Mat mask;
+        inRange(eye, Scalar(100, 100, 100), Scalar(255, 255, 255), mask);
+        eye.setTo(m_notificationColor, mask);
+    }
+    
+    eye.copyTo(m_face(cv::Rect(leftEye_x,  leftEye_y,  eyeWidth, eyeHeight)));
     cv::Mat flippedEye;
-    cv::flip(blinkEye[indexes[index]], flippedEye, 1); // flipping the right eye on its vertical axis
+    cv::flip(eye, flippedEye, 1); // flipping the right eye on its vertical axis
     flippedEye.copyTo(m_face(cv::Rect(rightEye_x, rightEye_y, eyeWidth, eyeHeight)));
 
     // Add nose
