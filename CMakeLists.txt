@@ -13,6 +13,7 @@ if(BASE_INCOHERENT_TO_FAULT)
 endif()
 
 option(WAKE_WORD "if enabled, the wakeWordDetection will be compiled" OFF)
+option(SILERO_VAD "if enabled, the sileroVAD will be compiled" OFF)
 
 if(${BTState})
 	# BehaviorTree.CPP links Boost::coroutine, but does not look for it
