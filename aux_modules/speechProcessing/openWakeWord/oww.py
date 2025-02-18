@@ -2,6 +2,7 @@
 import yarp
 import numpy as np
 from openwakeword.model import Model
+import openwakeword
 import multiprocessing as mp
 import threading
 import queue
@@ -174,6 +175,7 @@ def notify_detection(notification_port, face_port):
     notification_port.write()
 
 def main():
+    openwakeword.utils.download_models()
     config = parse_args()
     print("Running with configuration:", config)
 
