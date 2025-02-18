@@ -190,20 +190,20 @@ def main():
     process.start()
 
     out_sound_port = yarp.BufferedPortSound()
-    out_sound_port.open("/oww/audio:o")
+    out_sound_port.open("/wake/audio:o")
     in_sound_port = yarp.BufferedPortSound()
-    in_sound_port.open("/oww/audio:i")
+    in_sound_port.open("/wake/audio:i")
     
     notification_port = yarp.BufferedPortBottle()
-    notification_port.open("/oww/notification:o")
+    notification_port.open("/wake/notification:o")
     face_port = yarp.BufferedPortBottle()
-    face_port.open("/oww/face:o")
+    face_port.open("/wake/face:o")
     
     callback = OWWCallback(sound_queue, out_sound_port, config)
     in_sound_port.useCallback(callback)
 
     rpc_port = yarp.RpcServer()
-    rpc_port.open("/oww/rpc:i")
+    rpc_port.open("/wake/rpc:i")
     rpc_thread = threading.Thread(
         target=rpc_command_listener, 
         args=(rpc_port, face_port, callback, control_queue)
