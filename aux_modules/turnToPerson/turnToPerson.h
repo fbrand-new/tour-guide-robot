@@ -76,6 +76,8 @@ private:
     double m_max_angular_vel;     // Maximum angular velocity (deg/s)
     double m_dead_zone;           // Dead zone around image center (pixels)
     double m_command_timeout;     // Timeout for velocity commands (s)
+    double m_min_angular_threshold; // Minimum angular velocity threshold to stop rotation (deg/s)
+    double m_search_angular_vel;  // Angular velocity for searching when no person is detected (deg/s)
     bool m_active;                // Whether the module is actively controlling
     
     // Private methods
