@@ -1,0 +1,57 @@
+# Example YARP application XML for using turnToPerson module
+
+<application>
+    <name>turnToPersonDemo</name>
+    <description>Demonstration of the turnToPerson module</description>
+    
+    <!-- Required modules -->
+    <module>
+        <name>yarpserver</name>
+        <node>localhost</node>
+    </module>
+    
+    <!-- BaseControl2 for robot motion -->
+    <module>
+        <name>baseControl2</name>
+        <parameters>--from baseControl.ini</parameters>
+        <node>localhost</node>
+        <prefix>/robot</prefix>
+    </module>
+    
+    <!-- Navigation infrastructure (if needed) -->
+    <module>
+        <name>navigation2D_nws_yarp</name>
+        <parameters>--from navigation2D_nws.ini</parameters>
+        <node>localhost</node>
+    </module>
+    
+    <!-- Turn to person module -->
+    <module>
+        <name>turnToPerson</name>
+        <parameters>--from turnToPerson.ini --name turnToPerson</parameters>
+        <node>localhost</node>
+    </module>
+    
+    <!-- Example: Keypoint detector (replace with your actual detector) -->
+    <module>
+        <name>keypointDetector</name>
+        <parameters>--name keypointDetector</parameters>
+        <node>localhost</node>
+        <description>Your keypoint detection module</description>
+    </module>
+    
+    <!-- Connections -->
+    <connection>
+        <from>/keypointDetector/keypoints:o</from>
+        <to>/turnToPerson/keypoints:i</to>
+        <protocol>tcp</protocol>
+    </connection>
+    
+    <!-- Optional: Connect baseControl2 to navigation infrastructure -->
+    <connection>
+        <from>/navigation2D_nws_yarp/velocity2D:o</from>
+        <to>/robot/baseControl/command:i</to>
+        <protocol>tcp</protocol>
+    </connection>
+    
+</application>
