@@ -21,6 +21,8 @@ TurnToPerson::TurnToPerson(std::string name) :
     m_max_angular_vel(30.0),
     m_dead_zone(20.0),
     m_command_timeout(1.0),
+    m_min_angular_threshold(0.1),
+    m_search_angular_vel(5.0),
     m_active(true)
 {
 }
@@ -40,6 +42,10 @@ bool TurnToPerson::configure(yarp::os::ResourceFinder &rf)
     m_max_angular_vel = rf.check("max_angular_vel", yarp::os::Value(30.0)).asFloat64();
     m_dead_zone = rf.check("dead_zone", yarp::os::Value(20.0)).asFloat64();
     m_command_timeout = rf.check("command_timeout", yarp::os::Value(1.0)).asFloat64();
+    
+    // New parameters
+    m_min_angular_threshold = rf.check("min_angular_threshold", yarp::os::Value(0.1)).asFloat64();
+    m_search_angular_vel = rf.check("search_angular_vel", yarp::os::Value(5.0)).asFloat64();
     
     m_basecontrol_port = rf.check("basecontrol_port", yarp::os::Value("/baseControl/input/command/data:i")).asString();
     
@@ -84,6 +90,8 @@ bool TurnToPerson::configure(yarp::os::ResourceFinder &rf)
     yCInfo(TURN_TO_PERSON) << "Angular gain: " << m_angular_gain;
     yCInfo(TURN_TO_PERSON) << "Max angular velocity: " << m_max_angular_vel << " deg/s";
     yCInfo(TURN_TO_PERSON) << "Dead zone: " << m_dead_zone << " pixels";
+    yCInfo(TURN_TO_PERSON) << "Min angular threshold: " << m_min_angular_threshold << " deg/s";
+    yCInfo(TURN_TO_PERSON) << "Search angular velocity: " << m_search_angular_vel << " deg/s";
     
     return true;
 }
@@ -123,13 +131,19 @@ bool TurnToPerson::updateModule()
     PersonKeypoints person;
     if (!parseKeypoints(keypointsBottle, person))
     {
-        yCDebug(TURN_TO_PERSON) << "No valid person detected";
+        yCDebug(TURN_TO_PERSON) << "No valid person detected - searching...";
+        // Turn slowly to search for a person
+        sendDirectVelocityCommand(m_search_angular_vel);
+        yCDebug(TURN_TO_PERSON) << "Searching with angular velocity: " << m_search_angular_vel << " deg/s";
         return true;
     }
     
     if (!calculateCentroid(person))
     {
-        yCDebug(TURN_TO_PERSON) << "Cannot calculate person centroid";
+        yCDebug(TURN_TO_PERSON) << "Cannot calculate person centroid - searching...";
+        // Turn slowly to search for a person
+        sendDirectVelocityCommand(m_search_angular_vel);
+        yCDebug(TURN_TO_PERSON) << "Searching with angular velocity: " << m_search_angular_vel << " deg/s";
         return true;
     }
     
@@ -138,11 +152,11 @@ bool TurnToPerson::updateModule()
     // Calculate angular velocity to turn towards person
     double angular_vel = calculateAngularVelocity(person.centroid_u);
     
-    // Send velocity command
-    if (fabs(angular_vel) > 0.1) // Only send command if significant angular velocity
+    // Send velocity command using configurable threshold
+    if (fabs(angular_vel) > m_min_angular_threshold)
     {
         sendDirectVelocityCommand(angular_vel);
-        yCDebug(TURN_TO_PERSON) << "Turning with angular velocity: " << angular_vel << " deg/s";
+        yCDebug(TURN_TO_PERSON) << "Turning towards person with angular velocity: " << angular_vel << " deg/s";
     }
     else
     {
@@ -195,7 +209,7 @@ bool TurnToPerson::parseKeypoints(const yarp::os::Bottle* keypointsBottle, Perso
         }
 
         yarp::os::Bottle* firstPerson = extBottle->get(0).asList();
-        
+
         if (firstPerson != nullptr)
         {
             // Parse the first person's keypoints
