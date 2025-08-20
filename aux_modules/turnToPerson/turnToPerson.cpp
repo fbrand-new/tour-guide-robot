@@ -46,7 +46,9 @@ bool TurnToPerson::configure(yarp::os::ResourceFinder &rf)
     // New parameters
     m_min_angular_threshold = rf.check("min_angular_threshold", yarp::os::Value(0.1)).asFloat64();
     m_search_angular_vel = rf.check("search_angular_vel", yarp::os::Value(5.0)).asFloat64();
-    
+    m_score_threshold = rf.check("score_threshold", yarp::os::Value(0.5)).asFloat64();
+    m_min_keypoints_active = rf.check("min_keypoints_active", yarp::os::Value(5)).asInt32();
+
     m_basecontrol_port = rf.check("basecontrol_port", yarp::os::Value("/baseControl/input/command/data:i")).asString();
     
     // Port names
@@ -199,6 +201,8 @@ bool TurnToPerson::parseKeypoints(const yarp::os::Bottle* keypointsBottle, Perso
 
     // Just consider the first person that you find
 
+    std::size_t active_keypoints = 0;
+
     if (keypointsBottle->size() > 0)
     {
         yarp::os::Bottle* extBottle = keypointsBottle->get(0).asList();
@@ -218,15 +222,17 @@ bool TurnToPerson::parseKeypoints(const yarp::os::Bottle* keypointsBottle, Perso
                 if (firstPerson->get(i).isList())
                 {
                     yarp::os::Bottle* keypointBottle = firstPerson->get(i).asList();
-                    if (keypointBottle != nullptr && keypointBottle->size() >= 3)
+                    if (keypointBottle != nullptr && keypointBottle->size() >= 4)
                     {
                         std::string keypoint_name = keypointBottle->get(0).asString();
                         double u = keypointBottle->get(1).asFloat64();
                         double v = keypointBottle->get(2).asFloat64();
-                        
+                        double score = keypointBottle->get(3).asFloat64();
+
                         // Only consider valid keypoints (coordinates > 0)
-                        if (u > 0 && v > 0)
+                        if (u > 0 && v > 0 && score > m_score_threshold)
                         {
+                            active_keypoints++;
                             person.keypoint_names.push_back(keypoint_name);
                             person.u_coords.push_back(u);
                             person.v_coords.push_back(v);
@@ -239,8 +245,8 @@ bool TurnToPerson::parseKeypoints(const yarp::os::Bottle* keypointsBottle, Perso
         }
     }
 
-    
-    return person.valid && person.u_coords.size() > 0;
+    // Return only if we have enough valid keypoints
+    return person.valid && person.u_coords.size() > 0 && active_keypoints >= m_min_keypoints_active;
 }
 
 bool TurnToPerson::calculateCentroid(PersonKeypoints& person)

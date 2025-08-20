@@ -78,6 +78,9 @@ private:
     double m_command_timeout;     // Timeout for velocity commands (s)
     double m_min_angular_threshold; // Minimum angular velocity threshold to stop rotation (deg/s)
     double m_search_angular_vel;  // Angular velocity for searching when no person is detected (deg/s)
+    double m_score_threshold;     // Score threshold for keypoint validation
+
+    int m_min_keypoints_active;    // Minimum number of active keypoints for valid detection
     bool m_active;                // Whether the module is actively controlling
     
     // Private methods
