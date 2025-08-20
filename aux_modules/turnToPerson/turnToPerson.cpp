@@ -46,8 +46,6 @@ bool TurnToPerson::configure(yarp::os::ResourceFinder &rf)
     // New parameters
     m_min_angular_threshold = rf.check("min_angular_threshold", yarp::os::Value(0.1)).asFloat64();
     m_search_angular_vel = rf.check("search_angular_vel", yarp::os::Value(5.0)).asFloat64();
-    m_score_threshold = rf.check("score_threshold", yarp::os::Value(0.5)).asFloat64();
-    m_min_keypoints_active = rf.check("min_keypoints_active", yarp::os::Value(5)).asInt32();
 
     m_basecontrol_port = rf.check("basecontrol_port", yarp::os::Value("/baseControl/input/command/data:i")).asString();
     
@@ -191,17 +189,10 @@ bool TurnToPerson::parseKeypoints(const yarp::os::Bottle* keypointsBottle, Perso
         return false;
     }
     
-    person.keypoint_names.clear();
-    person.u_coords.clear();
-    person.v_coords.clear();
     person.valid = false;
     
-    // Parse bottle containing keypoints
-    // Expected format: (keypoint_name u_image v_image) (keypoint_name u_image v_image) ...
-
-    // Just consider the first person that you find
-
-    std::size_t active_keypoints = 0;
+    // Parse bottle containing bounding box and keypoints
+    // Expected format: (("bbox" <left> <right> <top> <bottom>) (kp1 ...) ...)
 
     if (keypointsBottle->size() > 0)
     {
@@ -214,67 +205,56 @@ bool TurnToPerson::parseKeypoints(const yarp::os::Bottle* keypointsBottle, Perso
 
         yarp::os::Bottle* firstPerson = extBottle->get(0).asList();
 
-        if (firstPerson != nullptr)
+        if (firstPerson != nullptr && firstPerson->size() > 0)
         {
-            // Parse the first person's keypoints
-            for (int i = 0; i < firstPerson->size(); i++)
+            // Look for the bounding box information in the first element
+            yarp::os::Bottle* bboxBottle = firstPerson->get(0).asList();
+            
+            if (bboxBottle != nullptr && bboxBottle->size() >= 5)
             {
-                if (firstPerson->get(i).isList())
+                std::string bbox_label = bboxBottle->get(0).asString();
+                
+                if (bbox_label == "bbox")
                 {
-                    yarp::os::Bottle* keypointBottle = firstPerson->get(i).asList();
-                    if (keypointBottle != nullptr && keypointBottle->size() >= 4)
+                    person.left = bboxBottle->get(1).asFloat64();
+                    person.right = bboxBottle->get(2).asFloat64();
+                    person.top = bboxBottle->get(3).asFloat64();
+                    person.bottom = bboxBottle->get(4).asFloat64();
+                    
+                    // Validate bounding box coordinates
+                    if (person.left >= 0 && person.right > person.left && 
+                        person.top >= 0 && person.bottom > person.top)
                     {
-                        std::string keypoint_name = keypointBottle->get(0).asString();
-                        double u = keypointBottle->get(1).asFloat64();
-                        double v = keypointBottle->get(2).asFloat64();
-                        double score = keypointBottle->get(3).asFloat64();
-
-                        // Only consider valid keypoints (coordinates > 0)
-                        if (u > 0 && v > 0 && score > m_score_threshold)
-                        {
-                            active_keypoints++;
-                            person.keypoint_names.push_back(keypoint_name);
-                            person.u_coords.push_back(u);
-                            person.v_coords.push_back(v);
-                            person.valid = true;
-                        }
+                        person.valid = true;
+                        yCDebug(TURN_TO_PERSON) << "Parsed bounding box: left=" << person.left 
+                                               << ", right=" << person.right 
+                                               << ", top=" << person.top 
+                                               << ", bottom=" << person.bottom;
                     }
                 }
             }
-
         }
     }
 
-    // Return only if we have enough valid keypoints
-    return person.valid && person.u_coords.size() > 0 && active_keypoints >= m_min_keypoints_active;
+    return person.valid;
 }
 
 bool TurnToPerson::calculateCentroid(PersonKeypoints& person)
 {
-    if (!person.valid || person.u_coords.empty())
+    if (!person.valid)
     {
         return false;
     }
     
-    double sum_u = 0.0;
-    double sum_v = 0.0;
-    int count = 0;
+    // Calculate centroid from bounding box
+    // For horizontal centering, use the middle point between left and right
+    person.centroid_u = (person.left + person.right) / 2.0;
+    person.centroid_v = (person.top + person.bottom) / 2.0;
     
-    for (size_t i = 0; i < person.u_coords.size(); i++)
-    {
-        sum_u += person.u_coords[i];
-        sum_v += person.v_coords[i];
-        count++;
-    }
+    yCDebug(TURN_TO_PERSON) << "Calculated centroid from bounding box: (" 
+                           << person.centroid_u << ", " << person.centroid_v << ")";
     
-    if (count > 0)
-    {
-        person.centroid_u = sum_u / count;
-        person.centroid_v = sum_v / count;
-        return true;
-    }
-    
-    return false;
+    return true;
 }
 
 double TurnToPerson::calculateAngularVelocity(double centroid_u)

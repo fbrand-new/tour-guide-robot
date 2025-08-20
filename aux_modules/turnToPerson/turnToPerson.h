@@ -29,11 +29,12 @@
  */
 struct PersonKeypoints
 {
-    std::vector<std::string> keypoint_names;
-    std::vector<double> u_coords;  // image u coordinates
-    std::vector<double> v_coords;  // image v coordinates
-    double centroid_u = 0.0;
-    double centroid_v = 0.0;
+    double left;
+    double right;
+    double top;
+    double bottom;
+    double centroid_u;  // Calculated centroid u coordinate
+    double centroid_v;  // Calculated centroid v coordinate    
     bool valid = false;
 };
 
@@ -78,9 +79,7 @@ private:
     double m_command_timeout;     // Timeout for velocity commands (s)
     double m_min_angular_threshold; // Minimum angular velocity threshold to stop rotation (deg/s)
     double m_search_angular_vel;  // Angular velocity for searching when no person is detected (deg/s)
-    double m_score_threshold;     // Score threshold for keypoint validation
 
-    int m_min_keypoints_active;    // Minimum number of active keypoints for valid detection
     bool m_active;                // Whether the module is actively controlling
     
     // Private methods
