@@ -23,6 +23,7 @@ import subprocess
 import sys
 import time
 from typing import Optional, Tuple, List
+import csv
 
 
 def run_cmd(cmd: List[str], timeout: float = 3.0) -> Tuple[int, str, str]:
@@ -141,6 +142,8 @@ class DowntimeEvent:
     end_mono: Optional[float] = None
     last_known_ssid: Optional[str] = None
     last_known_bssid: Optional[str] = None
+    started_not_associated: bool = False
+    started_no_ip: bool = False
 
     def duration(self, now_mono: Optional[float] = None) -> float:
         if self.end_mono is not None:
@@ -173,15 +176,101 @@ class Logger:
             self._fp = None
 
 
+class CsvLogger:
+    def __init__(self, path: Optional[str]):
+        self.path = path
+        self._fp = None
+        self._writer = None
+        if self.path:
+            os.makedirs(os.path.dirname(os.path.abspath(self.path)), exist_ok=True)
+            new_file = not os.path.exists(self.path) or os.path.getsize(self.path) == 0
+            self._fp = open(self.path, "a", newline="")
+            self._writer = csv.writer(self._fp)
+            if new_file:
+                self._writer.writerow([
+                    "type",               # event | summary
+                    "event_index",        # int (for type=event)
+                    "start_time_iso",
+                    "end_time_iso",
+                    "duration_s",         # float with 0.1s resolution
+                    "ssid",
+                    "bssid",
+                    "started_not_associated",
+                    "started_no_ip",
+                    # Summary-only fields below
+                    "runtime_s",
+                    "total_downtime_s",
+                    "downtime_pct",
+                    "events",
+                    "avg_downtime_s",
+                    "max_downtime_s",
+                ])
+
+    def write_event(self, idx: int, ev: DowntimeEvent, duration_s: float):
+        if not self._writer:
+            return
+        start_iso = ev.start_wall.isoformat(timespec="seconds") if ev.start_wall else ""
+        end_iso = ev.end_wall.isoformat(timespec="seconds") if ev.end_wall else ""
+        self._writer.writerow([
+            "event",
+            idx,
+            start_iso,
+            end_iso,
+            round(duration_s, 1),
+            ev.last_known_ssid or "",
+            ev.last_known_bssid or "",
+            int(ev.started_not_associated),
+            int(ev.started_no_ip),
+            "", "", "", "", "", "",
+        ])
+        self._fp.flush()
+
+    def write_summary(
+        self,
+        runtime_s: float,
+        total_down_s: float,
+        pct: float,
+        events: int,
+        avg_s: float,
+        max_s: float,
+    ):
+        if not self._writer:
+            return
+        self._writer.writerow([
+            "summary",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            round(runtime_s, 1),
+            round(total_down_s, 1),
+            f"{pct:.2f}",
+            events,
+            round(avg_s, 1),
+            round(max_s, 1),
+        ])
+        self._fp.flush()
+
+    def close(self):
+        if self._fp:
+            self._fp.close()
+            self._fp = None
+
+
 def format_duration(seconds: float) -> str:
-    seconds = int(round(seconds))
-    h, rem = divmod(seconds, 3600)
-    m, s = divmod(rem, 60)
+    # Human readable with 0.1s precision for seconds
+    if seconds < 60:
+        return f"{round(seconds, 1)}s"
+    h = int(seconds // 3600)
+    m = int((seconds % 3600) // 60)
+    s = seconds % 60
     if h:
-        return f"{h}h {m}m {s}s"
-    if m:
-        return f"{m}m {s}s"
-    return f"{s}s"
+        return f"{h}h {m}m {int(round(s))}s"
+    return f"{m}m {int(round(s))}s"
 
 
 def main():
@@ -189,6 +278,7 @@ def main():
     parser.add_argument("--iface", help="Wi‑Fi interface to monitor (auto-detect if omitted)")
     parser.add_argument("--interval", type=float, default=0.5, help="Sampling interval in seconds (default: 0.5)")
     parser.add_argument("--log", help="Optional log file to append events and summary")
+    parser.add_argument("--csv", help="Optional CSV file to append per-event and summary data")
     # By default, IPv4 presence is required for uptime.
     parser.add_argument(
         "--allow-ipv6-global",
@@ -204,6 +294,7 @@ def main():
         sys.exit(2)
 
     logger = Logger(args.log)
+    csv_logger = CsvLogger(args.csv)
     logger.write(f"Monitoring interface: {iface}; interval={args.interval}s")
 
     stats = Stats(start_mono=time.monotonic(), last_mono=time.monotonic())
@@ -260,6 +351,7 @@ def main():
                     logger.write(
                         f"Downtime ended after {format_duration(dur)} (from {current_event.start_wall.strftime('%H:%M:%S')} to {current_event.end_wall.strftime('%H:%M:%S')})"
                     )
+                    csv_logger.write_event(stats.events, current_event, dur)
                     current_event = None
             else:
                 # We are DOWN now
@@ -269,6 +361,8 @@ def main():
                         start_mono=t0,
                         last_known_ssid=link.ssid,
                         last_known_bssid=link.bssid,
+                        started_not_associated=(not link.connected),
+                        started_no_ip=(not has_ip),
                     )
                     logger.write("Downtime started (not associated and/or no IP)")
 
@@ -289,6 +383,10 @@ def main():
             logger.write(
                 f"Downtime (open) accounted as {format_duration(dur)} up to exit"
             )
+            # Close the event for CSV with an end time now
+            current_event.end_mono = stats.last_mono
+            current_event.end_wall = dt.datetime.now()
+            csv_logger.write_event(stats.events, current_event, dur)
 
         total_runtime = stats.last_mono - stats.start_mono
         pct = (stats.total_downtime / total_runtime * 100.0) if total_runtime > 0 else 0.0
@@ -305,6 +403,8 @@ def main():
             )
         logger.write("-------------------")
         logger.close()
+        csv_logger.write_summary(total_runtime, stats.total_downtime, pct, stats.events, avg, stats.max_event)
+        csv_logger.close()
 
 
 if __name__ == "__main__":
